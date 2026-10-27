@@ -53,7 +53,7 @@ object Store {
         .put("tvs", JSONArray().put(JSONObject().put("id", TV_ID).put("name", tvName())
             // picture modes never work in on-TV mode; a Fire TV gets the Input button (its picker
             // opens with the TV's own Input key, which needs the ADB this mode already has)
-            .put("quick", JSONArray(if (FireHome.isFireTv) listOf("sleep", "look", "input") else listOf("sleep", "look")))))
+            .put("quick", JSONArray(if (FireHome.isFireTv) listOf("sleep", "look", "input", "scores") else listOf("sleep", "look", "scores")))))
         .put("default_tv", TV_ID)
         .put("mode", "on-tv")
 

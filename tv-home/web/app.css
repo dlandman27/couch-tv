@@ -508,3 +508,44 @@ body {
   .srow.lifted { animation: none; }
   .set-rows { scroll-behavior: auto; }
 }
+
+/* ---------------- live scores: the strip above the apps, and the hub ---------------- */
+.sports { margin: 0 var(--safe-x) 1.25rem; }
+.sports.none { display: none; }
+.sports-track { display: flex; gap: 0.75rem; flex-wrap: wrap; max-height: 3.25rem; overflow: hidden; }
+.schip {
+  display: inline-flex; align-items: center; gap: 0.75rem; padding: 0.375rem 1.125rem; border-radius: 2rem; white-space: nowrap;
+  font-size: 1.3125rem; line-height: 2rem; font-weight: 600; color: #fff;
+  background: rgba(16, 16, 20, 0.46); -webkit-backdrop-filter: blur(1.25rem); backdrop-filter: blur(1.25rem);
+}
+.schip i { font-style: normal; font-weight: 500; color: rgba(255, 255, 255, 0.62); }
+.schip.in i { color: #ffd166; }
+.schip b { font-weight: 600; }
+.schip b.mine { color: #8fd3ff; }
+.theme-night .sports { position: fixed; left: var(--safe-x); right: var(--safe-x); bottom: 12.5rem; margin: 0; z-index: 3; }
+.theme-night .schip {
+  background: rgba(30, 20, 28, 0.32); -webkit-backdrop-filter: blur(1.75rem) saturate(170%); backdrop-filter: blur(1.75rem) saturate(170%);
+  box-shadow: inset 0 0 0 0.0625rem rgba(255, 210, 220, 0.16);
+}
+
+.sports-hub {
+  display: none; position: fixed; inset: 0; z-index: 40; padding: 3.5rem var(--safe-x);
+  background: rgba(10, 10, 14, 0.78); -webkit-backdrop-filter: blur(2.5rem); backdrop-filter: blur(2.5rem);
+}
+.sports-hub.on { display: block; }
+.hub-title { max-width: 56rem; margin: 0 auto 1.5rem; font-size: 2.5rem; line-height: 3rem; font-weight: 650; color: #fff; }
+.hub-cols { max-width: 56rem; margin: 0 auto; height: calc(100% - 5rem); overflow: hidden; }
+.hub-lg { margin: 1.5rem 0 0.75rem; font-size: 1.4375rem; line-height: 2rem; font-weight: 650; color: rgba(255, 255, 255, 0.55); text-transform: uppercase; letter-spacing: 0.06em; }
+.hub-lg:first-child { margin-top: 0; }
+.hub-game {
+  display: flex; align-items: center; gap: 0.75rem; padding: 0.5rem 1.125rem; border-radius: 1rem; margin-bottom: 0.375rem;
+  font-size: 1.4375rem; line-height: 2rem; color: rgba(255, 255, 255, 0.88);
+}
+.hub-game.focus { background: rgba(255, 255, 255, 0.14); box-shadow: inset 0 0 0 0.125rem rgba(255, 255, 255, 0.5); }
+.hub-team { font-weight: 600; }
+.hub-team.mine { color: #8fd3ff; }
+.hub-at { color: rgba(255, 255, 255, 0.45); }
+.hub-score { margin-left: 0.25rem; font-weight: 650; }
+.hub-detail { margin-left: auto; font-weight: 500; color: rgba(255, 255, 255, 0.55); }
+.hub-game.in .hub-detail { color: #ffd166; }
+.hub-none { font-size: 1.5rem; color: rgba(255, 255, 255, 0.7); }

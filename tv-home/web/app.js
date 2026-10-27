@@ -27,12 +27,16 @@
   // read in readConfig() once the page starts (mock.js fills them in for previews). See docs/CONFIG.md.
   var CFG = {}, HOME = {}, TVCFG = {}, QUICK = [];
   var WXCFG = { lat: -33.8688, lon: 151.2093, place: "Sydney", timezone: "Australia/Sydney" };
-  var QUICK_ALL = ["sleep", "picture", "look", "input"];
+  var QUICK_ALL = ["sleep", "picture", "look", "input", "scores"];
   // The look: ?theme= for a preview, then Home settings (or the Look button) on this TV, then home.look.
   var THEME = "night", NIGHT = true, CLOCK24 = false;
   // Home settings made on this TV with the gear tile (see "home settings" below). They win over
   // config.js. ST is the saved object; the rest are read from it in readConfig().
   var ST = {}, WX_SHOW = true, WX_F = false, WX_EVERY = 30, HIDDEN_TV = [];
+  // Sports from ST.sports: leagues (ids the bridge's /api/scores knows), follow (team
+  // abbreviations, pinned first and highlighted), all_live (leagues whose live games always show
+  // on the strip, a followed team or not). Empty: the strip and the Scores button stay hidden.
+  var SP_LEAGUES = [], SP_FOLLOW = [], SP_ALL_LIVE = [];
 
   // What this TV keeps for itself (app order, people order, new apps, the look). Written to the
   // page's storage and to the launcher (TVOS.keep), so the live page and the saved copy share it.
@@ -87,6 +91,7 @@
     gear: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>',
     look: '<svg viewBox="0 0 24 24"><rect x="2.5" y="4.5" width="19" height="15" rx="3"/><path d="M2.5 16l5.5-5.5 4.5 4.5 3-3 6 6"/><circle cx="16.5" cy="8.8" r="1.6"/></svg>',
     input: '<svg viewBox="0 0 24 24"><rect x="2.5" y="4" width="19" height="13" rx="2.5"/><path d="M8 21h8M12 7.5v6M9.5 11l2.5 2.5 2.5-2.5"/></svg>',
+    ball: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 3.5v17"/><path d="M5.6 6c3.6 3.5 9.2 3.5 12.8 0M5.6 18c3.6-3.5 9.2-3.5 12.8 0"/></svg>',
     store: '<svg viewBox="0 0 24 24"><path d="M5 8h14l-1.2 11.2a2 2 0 0 1-2 1.8H8.2a2 2 0 0 1-2-1.8z"/><path d="M9 10.5V7a3 3 0 0 1 6 0v3.5"/></svg>',
     check: '<svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
     updown: '<svg viewBox="0 0 24 24"><path d="M8 9.5l4-4 4 4M8 14.5l4 4 4-4"/></svg>',
@@ -161,6 +166,10 @@
     if (pl && isFinite(pl.lat) && isFinite(pl.lon)) WXCFG = { lat: pl.lat, lon: pl.lon, place: pl.name || "", timezone: pl.timezone || "auto" };
     WX_SHOW = ST.wx_show !== false;
     WX_F = ST.wx_unit === "f";
+    var sp = ST.sports && typeof ST.sports === "object" && !Array.isArray(ST.sports) ? ST.sports : {};
+    SP_LEAGUES = (Array.isArray(sp.leagues) ? sp.leagues : []).filter(function (l) { return typeof l === "string"; });
+    SP_FOLLOW = (Array.isArray(sp.follow) ? sp.follow : []).map(String);
+    SP_ALL_LIVE = (Array.isArray(sp.all_live) ? sp.all_live : []).map(String);
     WX_EVERY = [15, 30, 60].indexOf(ST.wx_every) >= 0 ? ST.wx_every : 30;
     var mine = TV_ID || CFG.default_tv;
     TVCFG = (CFG.tvs || []).filter(function (t) { return t.id === mine; })[0] || (CFG.tvs || [])[0] || {};
@@ -531,6 +540,7 @@
       if (q === "picture") return !OFFLINE && picShown;
       if (q === "look") return true;
       if (q === "input") return !OFFLINE || nativeInputs();
+      if (q === "scores") return !OFFLINE && SP_LEAGUES.length > 0;
       return false;
     });
   }
@@ -565,6 +575,8 @@
         el.innerHTML = ICONS.look + "<span>" + esc(NIGHT ? t("classic_look") : t("night_look")) + "</span>";
       } else if (q === "input") {
         el.innerHTML = ICONS.input + "<span>" + esc(t("input")) + "</span>";
+      } else if (q === "scores") {
+        el.innerHTML = ICONS.ball + "<span>" + esc(t("scores")) + "</span>";
       }
     });
     if (qi >= vis.length) qi = Math.max(0, vis.length - 1);
@@ -632,6 +644,105 @@
     else if (q === "picture") togglePicture();
     else if (q === "look") toggleLook();
     else if (q === "input") openInputs();
+    else if (q === "scores") openSports();
+  }
+
+  // ---------------- live scores: the strip above the apps, and the hub ----------------
+  var GAMES = [], LG_NAMES = {}, scoresTimer = null, sgI = 0, hubBackZone = "quick";
+
+  function followedGame(g) { return SP_FOLLOW.indexOf(g.home.abbr) >= 0 || SP_FOLLOW.indexOf(g.away.abbr) >= 0; }
+
+  function refreshScores() {
+    clearTimeout(scoresTimer);
+    if (OFFLINE || !SP_LEAGUES.length) { renderSports(); return; }
+    api("GET", "/api/scores?leagues=" + encodeURIComponent(SP_LEAGUES.join(",")), null, 12000)
+      .then(function (j) {
+        GAMES = j.games || [];
+        (j.leagues || []).forEach(function (l) { LG_NAMES[l.id] = l.name; });
+        renderSports();
+      }, function () {})
+      .then(function () {
+        var live = GAMES.some(function (g) { return g.state === "in"; });
+        scoresTimer = setTimeout(refreshScores, live ? 60000 : 300000);
+      });
+  }
+
+  /** The strip: games with a followed team, plus live games of the all_live leagues. Live first. */
+  function stripGames() {
+    var rank = { "in": 0, pre: 1, post: 2 };
+    return GAMES.filter(function (g) { return followedGame(g) || (g.state === "in" && SP_ALL_LIVE.indexOf(g.league) >= 0); })
+      .sort(function (a, b) {
+        return (rank[a.state] || 0) - (rank[b.state] || 0)
+          || (followedGame(b) ? 1 : 0) - (followedGame(a) ? 1 : 0)
+          || (Date.parse(a.start) || 0) - (Date.parse(b.start) || 0);
+      });
+  }
+
+  function chipHTML(g) {
+    var mine = function (side) { return SP_FOLLOW.indexOf(side.abbr) >= 0 ? ' class="mine"' : ""; };
+    var teams = g.state === "pre"
+      ? "<b" + mine(g.away) + ">" + esc(g.away.abbr) + "</b> @ <b" + mine(g.home) + ">" + esc(g.home.abbr) + "</b>"
+      : "<b" + mine(g.away) + ">" + esc(g.away.abbr) + " " + esc(g.away.score) + "</b>–<b" + mine(g.home) + ">" + esc(g.home.score) + " " + esc(g.home.abbr) + "</b>";
+    return '<span class="schip ' + esc(g.state) + '">' + teams + "<i>" + esc(g.detail) + "</i></span>";
+  }
+
+  function renderSports() {
+    var list = stripGames();
+    $("sports-section").classList.toggle("none", !list.length);
+    $("sports-track").innerHTML = list.map(chipHTML).join("");
+    if (zone === "sports") renderHub();
+  }
+
+  function hubRows() {
+    var rows = [];
+    SP_LEAGUES.forEach(function (lg) {
+      var games = GAMES.filter(function (g) { return g.league === lg; });
+      if (!games.length) return;
+      rows.push({ head: LG_NAMES[lg] || lg });
+      games.forEach(function (g) { rows.push({ game: g }); });
+    });
+    return rows;
+  }
+
+  function hubRowHTML(r, i) {
+    if (r.head) return '<h2 class="hub-lg">' + esc(r.head) + "</h2>";
+    var g = r.game;
+    var side = function (s) { return '<span class="hub-team' + (SP_FOLLOW.indexOf(s.abbr) >= 0 ? " mine" : "") + '">' + esc(s.name) + "</span>"; };
+    var score = g.state === "pre" ? "" : '<span class="hub-score">' + esc(g.away.score) + "–" + esc(g.home.score) + "</span>";
+    return '<div class="hub-game ' + esc(g.state) + (i === sgI ? " focus" : "") + '">' +
+      side(g.away) + '<span class="hub-at">@</span>' + side(g.home) + score +
+      '<span class="hub-detail">' + esc(g.detail) + "</span></div>";
+  }
+
+  function renderHub() {
+    var rows = hubRows();
+    $("hub-title").textContent = t("live_scores");
+    $("hub-cols").innerHTML = rows.length ? rows.map(hubRowHTML).join("") : '<p class="hub-none">' + esc(t("no_games")) + "</p>";
+    var f = $("hub-cols").getElementsByClassName("focus")[0];
+    if (f && f.scrollIntoView) f.scrollIntoView({ block: "center" });
+  }
+
+  function hubMove(dy) {
+    var rows = hubRows(), i = sgI + dy;
+    while (i >= 0 && i < rows.length && rows[i].head) i += dy;   // skip the league headings
+    if (i >= 0 && i < rows.length) { sgI = i; renderHub(); }
+  }
+
+  function openSports() {
+    hubBackZone = zone === "sports" ? "quick" : zone;
+    zone = "sports";
+    sgI = 0;
+    var rows = hubRows();
+    while (sgI < rows.length && rows[sgI].head) sgI++;
+    renderHub();
+    $("sports-hub").classList.add("on");
+    refreshScores();
+  }
+
+  function closeSports() {
+    $("sports-hub").classList.remove("on");
+    zone = hubBackZone === "sports" ? "quick" : hubBackZone;
+    paintFocus();
   }
   function refreshQuick() {
     var jobs = [];
@@ -1083,6 +1194,7 @@
 
   function move(dx, dy) {
     touched = true;
+    if (zone === "sports") { if (dy) hubMove(dy); return; }
     if (zone === "settings") { setMove(dx, dy); return; }
     if (zone === "gear") { if (dy) { gi = Math.max(0, Math.min(1, gi + dy)); renderGear(); } return; }
     if (lift) { moveLift(dx, dy); return; }
@@ -1155,6 +1267,7 @@
   }
 
   function goHome() {
+    if (zone === "sports") { closeSports(); return; }
     if (zone === "settings") { setBack(); return; }
     if (zone === "gear") { closeGear(); paintFocus(); return; }
     if (lift) { dropLift(); return; }   // BACK puts a picked-up app down where it is
@@ -1170,6 +1283,7 @@
   // there is nothing to pick up here, and then the press counts as a normal OK.
   function hold() {
     touched = true;
+    if (zone === "sports") return true;
     if (zone === "settings") return setHold();
     if (zone === "gear") return false;
     if (lift) { dropLift(); return true; }
@@ -1184,6 +1298,7 @@
 
   function activate() {
     touched = true;
+    if (zone === "sports") { closeSports(); return; }
     if (zone === "settings") { setActivate(); return; }
     if (zone === "gear") { if (gi === 0) openSettings(); else openTvSettings(); return; }
     if (lift) { dropLift(); return; }
@@ -2135,12 +2250,14 @@
   // the native side calls these
   // Home on the remote also re-reads the lists, so an order arranged on the phone shows straight away
   window.tv = { back: goHome, home: function () { if (zone === "settings") closeSettings(); else goHome(); refresh(); },
-    resume: function () { okReset(); refresh(); if (!OFFLINE) refreshQuick(); refreshWeather(); },
+    resume: function () { okReset(); refresh(); if (!OFFLINE) { refreshQuick(); refreshScores(); } refreshWeather(); },
     // the launcher's file picker has copied the chosen photos into its own storage (Home settings)
     photosAdded: function (names) { photosAdded(names); } };
 
   function start() {
     readConfig();
+    // The Orbit look lives on its own page; everything else stays here.
+    if ((ST.look || kept("tvhome.look") || HOME.look) === "orbit") { location.replace("orbit.html" + Q); return; }
     staticText();
     initSettings();
     mark("app-start");
@@ -2171,6 +2288,7 @@
     if (cached || TV) { render(); mark("home-painted-from-cache"); }
     renderQuick();
     if (!OFFLINE) refreshQuick();
+    refreshScores();
     refresh().then(function () { mark("home-painted-live"); });
   }
 

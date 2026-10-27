@@ -171,6 +171,11 @@ class Server(private val ctx: Context, port: Int) : NanoWSD(port) {
             "POST /api/volume" -> volume(body(s))
             "GET /api/screenshot" -> newFixedLengthResponse(Response.Status.OK, "image/png", Tv.screenshot().inputStream(), -1).noStore()
             "GET /api/weather" -> json(200, ok(Weather.get() ?: throw ApiError(503, "No weather right now.")))
+            "GET /api/scores" -> {
+                val lgs = (q("leagues") ?: "").split(',').map { it.trim() }.filter { it.isNotEmpty() }
+                if (lgs.isEmpty()) throw ApiError(400, "leagues is required (comma-separated league ids)")
+                json(200, Scores.get(lgs.take(8)))
+            }
             "POST /api/home-apps" -> {
                 val b = body(s)
                 Store.writeJson("home-apps.json", JSONObject().put("apps", b.optJSONArray("apps") ?: JSONArray()).put("line", b.optInt("line", 10)))

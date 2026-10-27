@@ -62,7 +62,8 @@ class HomeActivity : Activity() {
                     // The server may still be starting: try again shortly.
                     if (req.isForMainFrame) { ready = false; main.postDelayed({ load() }, 700) }
                 }
-                override fun shouldOverrideUrlLoading(view: WebView, req: WebResourceRequest) = true
+                // Our own pages may move between looks (index.html <-> orbit.html); anything else stays blocked.
+                override fun shouldOverrideUrlLoading(view: WebView, req: WebResourceRequest) = !req.url.toString().startsWith(base)
                 override fun shouldInterceptRequest(view: WebView, req: WebResourceRequest): WebResourceResponse? {
                     val u = req.url
                     if (u.host != "tvos.invalid") return null
@@ -79,7 +80,11 @@ class HomeActivity : Activity() {
         load()
     }
 
-    private fun load() { web?.loadUrl("$base/tv/") }
+    private fun load() {
+        // The Orbit look is its own page; the saved Home settings say which look is on.
+        val look = (Store.readJson("home-settings.json") as? JSONObject)?.optString("look")
+        web?.loadUrl("$base/tv/" + if (look == "orbit") "orbit.html" else "")
+    }
 
     override fun onResume() { super.onResume(); hideBars(); if (ready) js("window.tv && tv.resume()") }
     override fun onNewIntent(i: Intent) { super.onNewIntent(i); js("window.tv && tv.home()") }
