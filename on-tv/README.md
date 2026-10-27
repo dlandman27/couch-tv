@@ -116,6 +116,25 @@ adb shell pm enable com.google.android.apps.tv.launcherx                  # undo
 Check the package name on your TV first (`adb shell pm list packages | grep launcher`). Some Google
 Home features stop working while it is off. The app never does this by itself.
 
+**Fire TV (Fire OS):** Amazon's launcher cannot be switched off (it is a protected package), the
+Home key starts it by name, and newer Fire OS blocks both the TV's own ADB and usage events for
+sideloaded apps (seen on Fire OS 8.1.8.5 / RS8185). So on a Fire TV the app watches for Amazon's
+home with a small accessibility service (window changes only, reads nothing else) and puts its own
+home back on top; Amazon's home still flashes up for a moment. Switch on **Use as home screen**,
+then grant two things once, over ADB from a computer:
+
+```
+adb shell pm grant dev.couchtv.ontv android.permission.WRITE_SECURE_SETTINGS
+adb shell appops set dev.couchtv.ontv SYSTEM_ALERT_WINDOW allow
+```
+
+With the first grant the app switches the watch service on by itself and switches it back on if an
+update turns it off; the second lets it come forward from the background. Both grants survive
+reboots, so the computer is only needed that once. On a Fire TV the quick buttons also gain
+**Input** (the TV's own HDMI picker). The phone remote's keys, typing, power off and "what's
+playing" need ADB, which that Fire OS does not give the app: opening apps, playing a show by name,
+volume on the TV's own speaker and the sleep timer still work.
+
 The home's gear tile opens **Home settings** here too (language, weather place and units, look,
 scenes, apps, people, quick buttons; README, "Settings on the TV"). They are kept in this app
 (`/api/settings`, next to the setup page's own settings), and the people list is the same one the
