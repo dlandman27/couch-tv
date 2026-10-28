@@ -57,7 +57,8 @@ import kotlinx.coroutines.delay
  */
 @Composable
 fun HeroCarousel(films: List<UiRepo.Featured>, onPlay: (UiRepo.Featured) -> Unit,
-                 onUp: (() -> Unit)? = null, modifier: Modifier = Modifier) {
+                 onUp: (() -> Unit)? = null, contentBottomInset: androidx.compose.ui.unit.Dp = 0.dp,
+                 modifier: Modifier = Modifier) {
     if (films.isEmpty()) return
     var at by remember { mutableIntStateOf(0) }
     var heldAt by remember { androidx.compose.runtime.mutableLongStateOf(0L) }   // a key press holds the slide a while
@@ -88,13 +89,14 @@ fun HeroCarousel(films: List<UiRepo.Featured>, onPlay: (UiRepo.Featured) -> Unit
                 contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
         }
         Box(Modifier.fillMaxSize().background(Brush.horizontalGradient(
-            0f to Color(0xE6050505), 0.45f to Color(0x73050505), 0.75f to Color.Transparent)))
+            0f to Color(0xF2000000), 0.45f to Color(0x73000000), 0.75f to Color.Transparent)))
+        // fade the lower third down to pure black, so the image dissolves under the first rail
         Box(Modifier.fillMaxSize().background(Brush.verticalGradient(
-            0.6f to Color.Transparent, 1f to Color(0x8C050505))))
+            0.5f to Color.Transparent, 0.82f to Color(0xCC000000), 1f to Cj.Ground)))
 
         // The hero Box is a concrete height (the caller passes it); anchoring the block to the
         // bottom here puts the title low-left, well clear of the floating nav.
-        Column(Modifier.align(Alignment.BottomStart).padding(start = 44.dp, end = 40.dp, bottom = 30.dp).widthIn(max = 600.dp)) {
+        Column(Modifier.align(Alignment.BottomStart).padding(start = 44.dp, end = 40.dp, bottom = 30.dp + contentBottomInset).widthIn(max = 600.dp)) {
             Text("Picked for you", style = Cj.Small.copy(color = Color.White.copy(alpha = 0.75f)))
             Text(film.name, style = Cj.HeroTitle.copy(fontSize = 40.sp, lineHeight = 44.sp), maxLines = 1, overflow = TextOverflow.Ellipsis)
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp),

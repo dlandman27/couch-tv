@@ -2,59 +2,54 @@ package dev.couchtv.ontv.ui
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.graphics.vector.PathBuilder
-import androidx.compose.ui.graphics.vector.path
+import androidx.compose.ui.graphics.vector.addPathNodes
 import androidx.compose.ui.unit.dp
 
 /**
- * The nav bar's icons, drawn as small stroked vectors so there's no icon-pack dependency. Each is
- * a 24x24 line glyph in the current content colour (tinted by the Icon that draws it).
+ * The nav icons, as the real Lucide glyphs (the set the reference site uses). Each is the icon's
+ * SVG path data, parsed into a stroked 24x24 vector - no icon-pack dependency, exact Lucide shapes.
  */
-private fun lineIcon(name: String, body: PathBuilder.() -> Unit): ImageVector =
+internal fun lucide(name: String, d: String): ImageVector =
     ImageVector.Builder(name = name, defaultWidth = 24.dp, defaultHeight = 24.dp,
         viewportWidth = 24f, viewportHeight = 24f).apply {
-        path(stroke = SolidColor(Color.Black), strokeLineWidth = 2f,
-            strokeLineCap = androidx.compose.ui.graphics.StrokeCap.Round,
-            strokeLineJoin = androidx.compose.ui.graphics.StrokeJoin.Round, pathBuilder = body)
+        addPath(
+            pathData = addPathNodes(d),
+            stroke = SolidColor(Color.Black), strokeLineWidth = 2f,
+            strokeLineCap = StrokeCap.Round, strokeLineJoin = StrokeJoin.Round)
     }.build()
 
 object NavIcons {
-    val Home = lineIcon("home") {
-        moveTo(3f, 10.5f); lineTo(12f, 3f); lineTo(21f, 10.5f)
-        moveTo(5f, 9f); lineTo(5f, 20f); lineTo(19f, 20f); lineTo(19f, 9f)
-        moveTo(10f, 20f); lineTo(10f, 14f); lineTo(14f, 14f); lineTo(14f, 20f)
-    }
-    val Movies = lineIcon("movies") {
-        moveTo(3.5f, 5f); lineTo(20.5f, 5f); lineTo(20.5f, 19f); lineTo(3.5f, 19f); close()
-        moveTo(8f, 5f); lineTo(8f, 19f); moveTo(16f, 5f); lineTo(16f, 19f)
-        moveTo(3.5f, 12f); lineTo(20.5f, 12f)
-    }
-    val Shows = lineIcon("shows") {
-        moveTo(3.5f, 7f); lineTo(20.5f, 7f); lineTo(20.5f, 18f); lineTo(3.5f, 18f); close()
-        moveTo(8f, 21f); lineTo(16f, 21f); moveTo(9f, 7f); lineTo(5.5f, 3.5f); moveTo(15f, 7f); lineTo(18.5f, 3.5f)
-    }
-    val LiveTv = lineIcon("livetv") {
-        moveTo(3.5f, 8f); lineTo(16.5f, 8f); lineTo(16.5f, 18f); lineTo(3.5f, 18f); close()
-        moveTo(19.5f, 9.5f); arcTo(4f, 4f, 0f, false, true, 19.5f, 16.5f)
-        moveTo(21.5f, 7f); arcTo(7f, 7f, 0f, false, true, 21.5f, 19f)
-    }
-    val Sports = lineIcon("sports") {
-        moveTo(12f, 3.5f); arcTo(8.5f, 8.5f, 0f, true, true, 11.99f, 3.5f); close()
-        moveTo(12f, 3.5f); lineTo(12f, 20.5f)
-        moveTo(5.6f, 6f); arcTo(9f, 9f, 0f, false, false, 18.4f, 6f)
-        moveTo(5.6f, 18f); arcTo(9f, 9f, 0f, false, true, 18.4f, 18f)
-    }
-    val Apps = lineIcon("apps") {
-        moveTo(4f, 4f); lineTo(10f, 4f); lineTo(10f, 10f); lineTo(4f, 10f); close()
-        moveTo(14f, 4f); lineTo(20f, 4f); lineTo(20f, 10f); lineTo(14f, 10f); close()
-        moveTo(4f, 14f); lineTo(10f, 14f); lineTo(10f, 20f); lineTo(4f, 20f); close()
-        moveTo(14f, 14f); lineTo(20f, 14f); lineTo(20f, 20f); lineTo(14f, 20f); close()
-    }
-    val Search = lineIcon("search") {
-        moveTo(11f, 4f); arcTo(7f, 7f, 0f, true, true, 10.99f, 4f); close()
-        moveTo(16.2f, 16.2f); lineTo(21f, 21f)
-    }
+    val Home = lucide("house",
+        "M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8 " +
+        "M3 10a2 2 0 0 1 .709-1.528l7-6a2 2 0 0 1 2.582 0l7 6A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z")
+    val Movies = lucide("film",
+        "M4 3h16a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z " +
+        "M7 3v18 M3 7.5h4 M3 12h18 M3 16.5h4 M17 3v18 M17 7.5h4 M17 16.5h4")
+    val Shows = lucide("tv",
+        "m17 2-5 5-5-5 " +
+        "M4 7h16a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2z")
+    val LiveTv = lucide("radio",
+        "M4.9 19.1C1 15.2 1 8.8 4.9 4.9 M7.8 16.2c-2.3-2.3-2.3-6.1 0-8.5 " +
+        "M16.2 7.8c2.3 2.3 2.3 6.1 0 8.5 M19.1 4.9C23 8.8 23 15.1 19.1 19 " +
+        "M12 10a2 2 0 0 0 0 4 2 2 0 0 0 0-4z")
+    val Sports = lucide("trophy",
+        "M6 9H4.5a2.5 2.5 0 0 1 0-5H6 M18 9h1.5a2.5 2.5 0 0 0 0-5H18 M4 22h16 " +
+        "M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22 " +
+        "M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22 " +
+        "M6 2h12v7a6 6 0 0 1-12 0V2z")
+    val Apps = lucide("layout-grid",
+        "M4 3h5a1 1 0 0 1 1 1v5a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z " +
+        "M15 3h5a1 1 0 0 1 1 1v5a1 1 0 0 1-1 1h-5a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z " +
+        "M15 14h5a1 1 0 0 1 1 1v5a1 1 0 0 1-1 1h-5a1 1 0 0 1-1-1v-5a1 1 0 0 1 1-1z " +
+        "M4 14h5a1 1 0 0 1 1 1v5a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-5a1 1 0 0 1 1-1z")
+    val Search = lucide("search",
+        "M11 3a8 8 0 1 0 0 16 8 8 0 0 0 0-16z M21 21l-4.3-4.3")
+    val Mic = lucide("mic",
+        "M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z " +
+        "M19 10v2a7 7 0 0 1-14 0v-2 M12 19v3")
 
     val tabs = listOf(Home, Movies, Shows, LiveTv, Sports, Apps)
 }

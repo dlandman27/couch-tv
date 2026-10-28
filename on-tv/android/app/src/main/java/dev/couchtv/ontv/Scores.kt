@@ -23,6 +23,9 @@ object Scores {
 
     fun leagueName(id: String) = NAMES[id] ?: id
 
+    /** Every league this can fetch, for search ("the Islanders game" needs NHL even if unfollowed). */
+    fun allLeagues(): List<String> = PATHS.keys.toList()
+
     /** Games for these league ids, oldest cache entry refreshed first. Unknown ids are skipped. */
     @Synchronized fun get(leagues: List<String>): JSONObject {
         val games = JSONArray()
@@ -65,13 +68,21 @@ object Scores {
             val team = s.optJSONObject("team") ?: continue
             val o = JSONObject().put("abbr", team.optString("abbreviation"))
                 .put("name", team.optString("shortDisplayName", team.optString("displayName")))
+                .put("full", team.optString("displayName"))            // "New York Islanders", for search
                 .put("score", s.optString("score")).put("logo", team.optString("logo"))
             if (s.optString("homeAway") == "home") home = o else away = o
         }
         if (home == null || away == null) return null
+        // the TV networks carrying it ("ESPN", "TNT"), so search can answer "NBA games on ESPN"
+        val nets = JSONArray()
+        comp.optJSONArray("broadcasts")?.let { b ->
+            for (i in 0 until b.length()) b.optJSONObject(i)?.optJSONArray("names")?.let { n ->
+                for (j in 0 until n.length()) nets.put(n.optString(j))
+            }
+        }
         return JSONObject().put("league", lg).put("id", e.optString("id")).put("start", e.optString("date"))
             .put("state", status.optString("state"))                  // pre | in | post
             .put("detail", status.optString("shortDetail"))           // "Final", "8:00 PM EDT", "6:29 - 1st"
-            .put("home", home).put("away", away)
+            .put("home", home).put("away", away).put("networks", nets)
     }
 }

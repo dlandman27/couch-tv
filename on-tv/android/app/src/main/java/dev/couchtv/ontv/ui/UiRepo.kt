@@ -84,6 +84,20 @@ object UiRepo {
         Live.categories(kind).objects().map { Category(it.optString("id"), it.optString("name")) }
     }
 
+    /** The streaming services the line carries, for the Movies/Shows filter chips. */
+    suspend fun services(): List<Provider> = withContext(Dispatchers.IO) {
+        Live.serviceBrands().objects().map { o ->
+            Provider(o.optString("id"), o.optString("name"),
+                o.optString("vod").takeIf { it.isNotEmpty() && it != "null" },
+                o.optString("series").takeIf { it.isNotEmpty() && it != "null" })
+        }
+    }
+
+    /** The unified Movies/Shows wall: the whole kind (cat blank) or one category. */
+    suspend fun catalog(kind: String, cat: String): List<RailItem> = withContext(Dispatchers.IO) {
+        Live.catalog(kind, cat).objects().map(::railItem)
+    }
+
     /** One category's entries. Titles come back cleaned; live channels keep their names whole. */
     suspend fun items(kind: String, cat: String): List<RailItem> = withContext(Dispatchers.IO) {
         val arr = if (kind == "series") Live.seriesList(cat) else Live.channels(kind, cat)

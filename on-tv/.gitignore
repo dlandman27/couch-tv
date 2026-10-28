@@ -4,8 +4,10 @@ android/build/
 android/app/build/
 android/local.properties
 android/.kotlin/
-# copied in at build time from remote/dist and tv-home/web
-android/app/src/main/assets/
+# copied in at build time from remote/dist and tv-home/web (copyWeb wipes and refills www/)
+android/app/src/main/assets/*
+# Orbit's own assets (wallpapers) live beside www/ and are tracked
+!android/app/src/main/assets/orbit/
 # keys and signing
 *.jks
 *.keystore

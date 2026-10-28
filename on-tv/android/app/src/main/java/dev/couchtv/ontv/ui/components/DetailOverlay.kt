@@ -97,7 +97,11 @@ fun DetailOverlay(
                 if (note.isNotEmpty()) Text(note, style = Cj.Body.copy(color = Cj.Dim), modifier = Modifier.padding(top = 8.dp))
 
                 Surface(
-                    onClick = { if (kind == "series") onEpisodes() else det?.url?.takeIf { it.isNotEmpty() }?.let { onPlay(it) } },
+                    onClick = {
+                        // "recently watched" starts here: opening a title to watch records it for Home
+                        det?.let { dev.couchtv.ontv.ui.Recents.note(id, kind, it.name, it.poster, it.backdrop, it.url, it.rating) }
+                        if (kind == "series") onEpisodes() else det?.url?.takeIf { it.isNotEmpty() }?.let { onPlay(it) }
+                    },
                     shape = ClickableSurfaceDefaults.shape(CircleShape),
                     scale = ClickableSurfaceDefaults.scale(focusedScale = 1.06f),
                     colors = ClickableSurfaceDefaults.colors(

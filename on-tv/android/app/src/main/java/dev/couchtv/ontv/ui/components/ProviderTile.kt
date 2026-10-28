@@ -38,17 +38,17 @@ fun ProviderTile(id: String, name: String, onOk: () -> Unit, modifier: Modifier 
     val brand = Cj.BrandColors[id] ?: Cj.Hover
     Surface(
         onClick = onOk,
-        shape = ClickableSurfaceDefaults.shape(RoundedCornerShape(12.dp)),
+        shape = ClickableSurfaceDefaults.shape(Cj.Card),
         scale = ClickableSurfaceDefaults.scale(focusedScale = 1.07f),
         colors = ClickableSurfaceDefaults.colors(containerColor = Color.Transparent, focusedContainerColor = Color.Transparent),
         border = ClickableSurfaceDefaults.border(
-            focusedBorder = Border(BorderStroke(3.dp, Color.White), shape = RoundedCornerShape(12.dp))),
-        modifier = modifier.size(width = 176.dp, height = 74.dp)
+            focusedBorder = Border(BorderStroke(3.dp, Color.White), shape = Cj.Card)),
+        modifier = modifier.size(width = 168.dp, height = 70.dp)
     ) {
         Box(
             contentAlignment = Alignment.Center,
             modifier = Modifier.fillMaxSize().background(
-                Brush.linearGradient(listOf(brand.copy(alpha = 0.5f), Cj.Surface)), RoundedCornerShape(12.dp))
+                Brush.linearGradient(listOf(brand.copy(alpha = 0.5f), Cj.Surface)), Cj.Card)
         ) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 if (icon != null) AsyncImage(model = icon, contentDescription = null,

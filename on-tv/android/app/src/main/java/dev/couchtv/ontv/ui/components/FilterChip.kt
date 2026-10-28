@@ -29,6 +29,6 @@ fun FilterChip(name: String, on: Boolean, onOk: () -> Unit, modifier: Modifier =
         modifier = modifier
     ) {
         Text(name, style = Cj.Label.copy(color = Color.Unspecified),
-            modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp))
+            modifier = Modifier.padding(horizontal = 15.dp, vertical = 6.dp))
     }
 }

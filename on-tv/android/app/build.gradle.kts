@@ -54,6 +54,8 @@ dependencies {
     implementation("androidx.activity:activity-compose:1.9.3")
     implementation("androidx.tv:tv-material:1.0.0")
     implementation("io.coil-kt:coil-compose:2.7.0")
+    // Plain JVM tests for pure logic (search query parsing); not packaged into the app.
+    testImplementation("junit:junit:4.13.2")
 }
 
 // The phone remote and the TV home are built elsewhere in the repo. Copy them in before every build.

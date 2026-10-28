@@ -36,11 +36,11 @@ fun WideCard(
 ) {
     Surface(
         onClick = onOk,
-        shape = ClickableSurfaceDefaults.shape(RoundedCornerShape(12.dp)),
+        shape = ClickableSurfaceDefaults.shape(Cj.Card),
         scale = ClickableSurfaceDefaults.scale(focusedScale = 1.08f),
         colors = ClickableSurfaceDefaults.colors(containerColor = Cj.Surface, focusedContainerColor = Cj.Surface),
         border = ClickableSurfaceDefaults.border(
-            focusedBorder = Border(BorderStroke(3.dp, Color.White), shape = RoundedCornerShape(12.dp))),
+            focusedBorder = Border(BorderStroke(3.dp, Color.White), shape = Cj.Card)),
         modifier = modifier.width(width).aspectRatio(16f / 9f)
     ) {
         Box(Modifier.fillMaxSize()) {

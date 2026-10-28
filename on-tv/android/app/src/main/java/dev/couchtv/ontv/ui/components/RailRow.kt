@@ -21,10 +21,10 @@ fun RailRow(
 ) {
     if (count == 0) return
     Column(modifier = modifier) {
-        Text(title, style = Cj.RowTitle, modifier = Modifier.padding(start = 48.dp, top = 22.dp, bottom = 12.dp))
+        Text(title, style = Cj.RowTitle, modifier = Modifier.padding(start = 44.dp, top = 14.dp, bottom = 8.dp))
         LazyRow(
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-            contentPadding = PaddingValues(horizontal = 48.dp)
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            contentPadding = PaddingValues(horizontal = 44.dp)
         ) {
             items(count = count) { i -> item(i) }
         }

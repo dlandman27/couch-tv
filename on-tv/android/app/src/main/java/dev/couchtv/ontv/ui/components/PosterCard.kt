@@ -4,11 +4,14 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -33,30 +36,42 @@ fun PosterCard(
     rating: Double,
     onOk: () -> Unit,
     modifier: Modifier = Modifier,
-    width: Dp = 150.dp
+    width: Dp? = 132.dp,
+    progress: Float? = null,
+    subtitle: String? = null
 ) {
-    Column(modifier = modifier.width(width)) {
+    Column(modifier = modifier.then(if (width != null) Modifier.width(width) else Modifier.fillMaxWidth())) {
         Surface(
             onClick = onOk,
-            shape = ClickableSurfaceDefaults.shape(RoundedCornerShape(12.dp)),
+            shape = ClickableSurfaceDefaults.shape(Cj.Card),
             scale = ClickableSurfaceDefaults.scale(focusedScale = 1.07f),
             colors = ClickableSurfaceDefaults.colors(containerColor = Cj.Surface, focusedContainerColor = Cj.Surface),
             border = ClickableSurfaceDefaults.border(
-                focusedBorder = Border(BorderStroke(3.dp, Color.White), shape = RoundedCornerShape(12.dp))),
+                focusedBorder = Border(BorderStroke(3.dp, Color.White), shape = Cj.Card)),
             modifier = Modifier.fillMaxWidth().aspectRatio(2f / 3f)
         ) {
             // a dim card shows under the poster while it decodes, so a rail never flashes empty
             Box(
-                Modifier.fillMaxWidth().aspectRatio(2f / 3f).clip(RoundedCornerShape(12.dp))
+                Modifier.fillMaxWidth().aspectRatio(2f / 3f).clip(Cj.Card)
                     .background(Cj.Surface2)) {
                 AsyncImage(
                     model = poster.ifEmpty { null }, contentDescription = name,
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxWidth().aspectRatio(2f / 3f))
+                // a resume bar across the bottom for Continue Watching
+                if (progress != null) Box(
+                    Modifier.align(Alignment.BottomStart).fillMaxWidth().height(5.dp)
+                        .background(Color(0x99000000))) {
+                    Box(Modifier.fillMaxHeight().fillMaxWidth(progress.coerceIn(0.02f, 1f)).background(Cj.Accent))
+                }
             }
         }
         Text(name, style = Cj.Small.copy(color = Cj.Text), maxLines = 1, overflow = TextOverflow.Ellipsis,
             modifier = Modifier.padding(top = 7.dp, start = 2.dp))
-        Stars(rating, size = Cj.Small.fontSize)
+        if (subtitle != null)
+            Text(subtitle, style = Cj.Small.copy(color = Cj.Dim), maxLines = 1, overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.padding(start = 2.dp))
+        else
+            Stars(rating, size = Cj.Small.fontSize)
     }
 }

@@ -22,7 +22,7 @@ import dev.couchtv.ontv.ui.Cj
 fun ChannelRow(name: String, logo: String, onOk: () -> Unit, modifier: Modifier = Modifier) {
     Surface(
         onClick = onOk,
-        shape = ClickableSurfaceDefaults.shape(RoundedCornerShape(10.dp)),
+        shape = ClickableSurfaceDefaults.shape(Cj.CardSmall),
         colors = ClickableSurfaceDefaults.colors(
             containerColor = Cj.Surface.copy(alpha = 0.55f),
             focusedContainerColor = androidx.compose.ui.graphics.Color.White,

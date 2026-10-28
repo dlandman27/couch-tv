@@ -31,13 +31,13 @@ fun GameCard(g: UiRepo.Game, leagueName: String, follow: List<String>, hideScore
              onOk: () -> Unit, modifier: Modifier = Modifier) {
     Surface(
         onClick = onOk,
-        shape = ClickableSurfaceDefaults.shape(RoundedCornerShape(14.dp)),
+        shape = ClickableSurfaceDefaults.shape(Cj.Card),
         scale = ClickableSurfaceDefaults.scale(focusedScale = 1.05f),
         colors = ClickableSurfaceDefaults.colors(
             containerColor = Cj.Surface.copy(alpha = 0.75f), contentColor = Color.White,
             focusedContainerColor = Cj.Hover, focusedContentColor = Color.White),
-        border = ClickableSurfaceDefaults.border(focusedBorder = Border(BorderStroke(3.dp, Color.White), shape = RoundedCornerShape(14.dp))),
-        modifier = modifier.width(230.dp)
+        border = ClickableSurfaceDefaults.border(focusedBorder = Border(BorderStroke(3.dp, Color.White), shape = Cj.Card)),
+        modifier = modifier.width(208.dp)
     ) {
         Column(Modifier.padding(14.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {

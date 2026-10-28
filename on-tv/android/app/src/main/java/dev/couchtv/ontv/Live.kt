@@ -80,6 +80,46 @@ object Live {
         return out
     }
 
+    /**
+     * One unified catalogue for the Movies/Shows wall: a whole kind when cat is blank (newest
+     * first), or one category's entries. Mapped with ready links, capped so the grid stays light.
+     * kind: vod | series.
+     */
+    fun catalog(kind: String, cat: String): JSONArray {
+        val c = cfg() ?: throw ApiError(409, "No playlist on this TV yet.")
+        val base = c.getString("server"); val u = c.getString("username"); val p = c.getString("password")
+        val catParam = if (cat.isNotEmpty()) "&category_id=$cat" else ""
+        val action = if (kind == "series") "get_series" else "get_vod_streams"
+        val raw = JSONArray(fetch(apiUrl(action, catParam), 3600_000))
+        val list = (0 until raw.length()).map { raw.getJSONObject(it) }
+        // "All" (no category) spans the whole line, so lead with the most recently added.
+        val ordered = if (cat.isEmpty())
+            list.sortedByDescending { (it.optString(if (kind == "series") "last_modified" else "added")).toLongOrNull() ?: 0L }
+        else list
+        val out = JSONArray()
+        val seen = HashSet<String>()   // the same film lands in several categories; show it once
+        for (s in ordered) {
+            if (out.length() >= 800) break
+            val (title, year) = cleanTitle(s.optString("name"))
+            if (!seen.add((title + "|" + year).lowercase())) continue
+            if (kind == "series") {
+                out.put(JSONObject().put("id", s.optString("series_id")).put("kind", "series")
+                    .put("name", title).put("year", year).put("logo", thumb(s.optString("cover")))
+                    .put("rating", s.optDouble("rating_5based", 0.0).takeIf { it > 0 } ?: JSONObject.NULL))
+            } else {
+                val id = s.optString("stream_id")
+                out.put(JSONObject().put("id", id).put("kind", "vod")
+                    .put("name", title).put("year", year).put("logo", thumb(s.optString("stream_icon")))
+                    .put("rating", s.optDouble("rating_5based", 0.0).takeIf { it > 0 } ?: JSONObject.NULL)
+                    .put("url", "$base/movie/$u/$p/$id.${s.optString("container_extension").ifEmpty { "mp4" }}"))
+            }
+        }
+        return out
+    }
+
+    /** The branded groups the line carries (Netflix, Disney+, …), for the Movies/Shows service chips. */
+    fun serviceBrands(): JSONArray = providers()
+
     /** The series in one category: covers and ratings, no links (episodes() has those). */
     fun seriesList(cat: String): JSONArray {
         val arr = JSONArray(fetch(apiUrl("get_series", "&category_id=$cat"), 3600_000))
@@ -234,12 +274,20 @@ object Live {
 
     // ---------------------------------------------------------------- search
 
-    private data class Row(val kind: String, val id: String, val name: String, val logo: String, val ext: String, val rating: Double)
+    private data class Row(val kind: String, val id: String, val name: String, val logo: String, val ext: String,
+                           val rating: Double, val cat: String = "")
     private var index: Pair<Long, List<Row>>? = null
 
     /** A lean index over the whole line (tens of thousands of names), built once, kept six hours. */
+    private var indexComplete = false
+
+    /** Build the search index ahead of the first query (the search screen calls this on open). */
+    fun warmSearch() { runCatching { searchIndex() } }
+
     @Synchronized private fun searchIndex(): List<Row> {
-        index?.let { (at, rows) -> if (System.currentTimeMillis() - at < 6 * 3600_000) return rows }
+        // a complete index lasts six hours; one missing a list (a timed-out pull) is retried soon
+        val ttl = if (indexComplete) 6 * 3600_000L else 120_000L
+        index?.let { (at, rows) -> if (System.currentTimeMillis() - at < ttl) return rows }
         val rows = ArrayList<Row>(60_000)
         fun pull(kind: String, action: String, idKey: String, logoKey: String) {
             val c = URL(apiUrl(action)).openConnection() as HttpURLConnection
@@ -249,13 +297,15 @@ object Live {
             for (i in 0 until arr.length()) {
                 val s = arr.getJSONObject(i)
                 rows.add(Row(kind, s.optString(idKey), s.optString("name"), s.optString(logoKey),
-                    s.optString("container_extension"), s.optDouble("rating_5based", 0.0)))
+                    s.optString("container_extension"), s.optDouble("rating_5based", 0.0), s.optString("category_id")))
             }
         }
-        runCatching { pull("live", "get_live_streams", "stream_id", "stream_icon") }
-        runCatching { pull("vod", "get_vod_streams", "stream_id", "stream_icon") }
-        runCatching { pull("series", "get_series", "series_id", "cover") }
+        val ok = listOf(
+            runCatching { pull("live", "get_live_streams", "stream_id", "stream_icon") }.isSuccess,
+            runCatching { pull("vod", "get_vod_streams", "stream_id", "stream_icon") }.isSuccess,
+            runCatching { pull("series", "get_series", "series_id", "cover") }.isSuccess)
         if (rows.isEmpty()) throw ApiError(502, "The line's lists would not load for search.")
+        indexComplete = ok.all { it }
         index = System.currentTimeMillis() to rows
         return rows
     }
@@ -283,6 +333,66 @@ object Live {
         }
         return out
     }
+
+    /**
+     * The structured search behind natural-language queries. Every filter is optional and they
+     * combine: [kinds] (live | vod | series), [words] that must all appear in the name, [catTokens]
+     * matched against the entry's category name ("horror" finds "EN - HORROR"), [nameAny] of which
+     * one must appear in the name (networks: "espn"), and a [years] range read from the title's
+     * "(2015)". Real catalogue entries only, de-duplicated, best matches first.
+     */
+    fun find(kinds: Set<String>, words: List<String>, catTokens: List<String>, nameAny: List<String>,
+             years: IntRange?, limit: Int): JSONArray {
+        val c = cfg() ?: throw ApiError(409, "No playlist on this TV yet.")
+        val base = c.getString("server"); val u = c.getString("username"); val p = c.getString("password")
+        // category id -> lower-case name, per kind, only when a category filter is asked for
+        val catNames = if (catTokens.isEmpty()) emptyMap() else kinds.associateWith { k ->
+            runCatching { categories(k) }.getOrNull()?.let { a ->
+                (0 until a.length()).associate { a.getJSONObject(it).optString("id") to a.getJSONObject(it).optString("name").lowercase() }
+            } ?: emptyMap()
+        }
+        val ws = words.map { it.lowercase() }.filter { it.isNotBlank() }
+        val phrase = ws.joinToString(" ")
+        data class Hit(val r: Row, val title: String, val year: Int?)
+        val hits = ArrayList<Hit>()
+        for (r in searchIndex()) {
+            if (r.kind !in kinds) continue
+            val n = r.name.lowercase()
+            if (ws.isNotEmpty() && !ws.all { n.contains(it) }) continue
+            if (nameAny.isNotEmpty() && nameAny.none { n.contains(it) }) continue
+            if (catTokens.isNotEmpty()) {
+                val cn = catNames[r.kind]?.get(r.cat) ?: continue
+                if (catTokens.none { cn.contains(it) }) continue
+            }
+            val (title, y) = if (r.kind == "live") r.name.trim() to "" else cleanTitle(r.name)
+            val year = y.toIntOrNull()
+            if (years != null && (year == null || year !in years)) continue
+            hits.add(Hit(r, title, year))
+        }
+        val ordered = hits.sortedWith(compareBy<Hit>(
+            { if (phrase.isNotEmpty() && it.title.lowercase().startsWith(phrase)) 0 else 1 },
+            { -(it.year ?: 0) }, { -it.r.rating }))
+        val out = JSONArray(); val seen = HashSet<String>()
+        for (h in ordered) {
+            if (out.length() >= limit) break
+            if (!seen.add(h.r.kind + "|" + h.title.lowercase() + "|" + (h.year ?: ""))) continue
+            val o = JSONObject().put("kind", h.r.kind).put("id", h.r.id).put("name", h.title)
+                .put("year", h.year?.toString() ?: "").put("logo", thumb(h.r.logo))
+                .put("rating", h.r.rating.takeIf { it > 0 } ?: JSONObject.NULL)
+            when (h.r.kind) {
+                "live" -> o.put("url", "$base/live/$u/$p/${h.r.id}.m3u8")
+                "vod" -> o.put("url", "$base/movie/$u/$p/${h.r.id}.${h.r.ext.ifEmpty { "mp4" }}")
+            }
+            out.put(o)
+        }
+        return out
+    }
+
+    /** The genre-like category names a kind carries ("EN - COMEDY" → "comedy"), for search suggestions. */
+    fun genreNames(kind: String): List<String> = runCatching {
+        val a = categories(kind)
+        (0 until a.length()).map { a.getJSONObject(it).optString("name") }
+    }.getOrDefault(emptyList())
 
     /** One series: its seasons, each with playable episodes. */
     fun episodes(seriesId: String): JSONObject {
