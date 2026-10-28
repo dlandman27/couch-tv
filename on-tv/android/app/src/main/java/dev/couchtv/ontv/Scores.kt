@@ -65,7 +65,7 @@ object Scores {
             val team = s.optJSONObject("team") ?: continue
             val o = JSONObject().put("abbr", team.optString("abbreviation"))
                 .put("name", team.optString("shortDisplayName", team.optString("displayName")))
-                .put("score", s.optString("score"))
+                .put("score", s.optString("score")).put("logo", team.optString("logo"))
             if (s.optString("homeAway") == "home") home = o else away = o
         }
         if (home == null || away == null) return null

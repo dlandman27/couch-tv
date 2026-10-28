@@ -82,7 +82,11 @@
       $("hero-title").textContent = greeting();
       $("hero-sub").textContent = "Pick an app, or ask the phone remote to play something.";
     }
-    $("hero-art").style.backgroundImage = art ? 'url("' + art.replace(/"/g, "") + '")' : "";
+    if (!art) {   // no show to feature: a scene for the hour keeps the card from sitting empty
+      var h = new Date().getHours();
+      art = "backgrounds/" + (h < 7 ? "scene-night.jpg" : h < 11 ? "scene-dawn.jpg" : h < 16 ? "scene-water.jpg" : h < 20 ? "scene-golden.jpg" : "scene-night.jpg");
+    }
+    $("hero-art").style.backgroundImage = 'url("' + art.replace(/"/g, "") + '")';
     var btns = ['<span class="hbtn' + (zone === "hero" && hi === 0 ? " focus" : "") + '" id="hb-watch">' + ICON_PLAY + "<span>" + (it ? "Watch" : "Apps") + "</span></span>"];
     $("hero-btns").innerHTML = btns.join("");
   }
@@ -94,15 +98,30 @@
 
   function minutesLeftText(it) { return it && it.progress && it.progress.minutes_left ? it.progress.minutes_left + " min left" : ""; }
 
+  /** The card row under the hero: more to keep watching, or the first apps while there is none. */
+  function cardItems() {
+    var cw = shows.slice(1, 5);
+    if (cw.length) return cw.map(function (it) { return { kind: "show", it: it }; });
+    return apps.slice(0, 4).map(function (a) { return { kind: "app", it: a }; });
+  }
+
   function renderCards() {
-    var list = shows.slice(1, 5);
+    var list = cardItems();
+    var fromShows = list.length && list[0].kind === "show";
+    $("cw-title").textContent = fromShows ? "Continue Watching" : "Your apps";
     $("cw-title").classList.toggle("none", !list.length);
     $("cards").classList.toggle("none", !list.length);
-    $("cards").innerHTML = list.map(function (it, i) {
+    $("cards").innerHTML = list.map(function (c, i) {
+      var focus = zone === "cards" && i === ci ? " focus" : "";
+      if (c.kind === "app") {
+        return '<div class="card' + focus + '" style="background-image:url(&quot;' + esc(banner(c.it.package)) + '&quot;)">' +
+          '<div class="meta"><span class="name">' + esc(c.it.name) + "</span></div></div>";
+      }
+      var it = c.it;
       var art = it.backdrop || it.poster || (it.app && it.app.package ? banner(it.app.package) : "");
       var sub = minutesLeftText(it) || (it.season && it.episode ? "S" + it.season + " E" + it.episode : (it.app && it.app.name) || "");
       var pct = it.progress && it.progress.percent;
-      return '<div class="card' + (zone === "cards" && i === ci ? " focus" : "") + '"' +
+      return '<div class="card' + focus + '"' +
         (art ? ' style="background-image:url(&quot;' + esc(art) + '&quot;)"' : "") + ">" +
         '<div class="meta"><span class="name">' + esc(it.title) + '</span><span class="left">' + esc(sub) + "</span></div>" +
         (pct ? '<div class="bar"><i style="width:' + Math.min(100, Math.max(2, pct)) + '%"></i></div>' : "") +
@@ -130,8 +149,11 @@
     el.classList.toggle("focus", zone === "pill");
     if (!list.length) return;
     var g = list[pillI % list.length];
-    var side = function (s) { return '<span' + (SP.follow.indexOf(s.abbr) >= 0 ? ' class="mine"' : "") + ">" + esc(s.abbr) + (g.state === "pre" ? "" : " <b>" + esc(s.score) + "</b>") + "</span>"; };
-    el.innerHTML = ICON_BALL + side(g.away) + "<span>—</span>" + side(g.home) +
+    var side = function (s) {
+      return (s.logo ? '<img src="' + esc(s.logo) + '" alt="">' : "") +
+        '<span' + (SP.follow.indexOf(s.abbr) >= 0 ? ' class="mine"' : "") + ">" + esc(s.abbr) + (g.state === "pre" ? "" : " <b>" + esc(s.score) + "</b>") + "</span>";
+    };
+    el.innerHTML = side(g.away) + "<span>—</span>" + side(g.home) +
       '<span class="det">' + esc(g.detail) + '</span><span class="chev">' + ICON_CHEV + "</span>";
   }
 
@@ -175,7 +197,10 @@
     $("board").innerHTML = rows.length ? rows.map(function (r, i) {
       if (r.head) return '<h2 class="b-lg">' + esc(r.head) + "</h2>";
       var g = r.game;
-      var side = function (s) { return '<span class="b-team' + (SP.follow.indexOf(s.abbr) >= 0 ? " mine" : "") + '">' + esc(s.name) + "</span>"; };
+      var side = function (s) {
+        return (s.logo ? '<img class="b-logo" src="' + esc(s.logo) + '" alt="">' : "") +
+          '<span class="b-team' + (SP.follow.indexOf(s.abbr) >= 0 ? " mine" : "") + '">' + esc(s.name) + "</span>";
+      };
       var score = g.state === "pre" ? "" : '<span class="b-score">' + esc(g.away.score) + "–" + esc(g.home.score) + "</span>";
       return '<div class="b-game' + (g.state === "in" ? " live" : "") + (zone === "board" && i === bi ? " focus" : "") + '">' +
         side(g.away) + '<span class="b-at">@</span>' + side(g.home) + score +
@@ -188,7 +213,7 @@
   // ---------------- focus and keys ----------------
   function paint() { renderTabs(); renderHero(); renderCards(); renderPill(); if (tab === "apps") renderApps(); if (tab === "scores") renderBoard(); }
 
-  function cardCount() { return Math.min(4, Math.max(0, shows.length - 1)); }
+  function cardCount() { return cardItems().length; }
 
   function move(dx, dy) {
     if (zone === "tabs") {
@@ -239,7 +264,12 @@
       openShow(it);
       return;
     }
-    if (zone === "cards") { var c = shows[ci + 1]; if (c) openShow(c); return; }
+    if (zone === "cards") {
+      var c = cardItems()[ci];
+      if (c && c.kind === "show") openShow(c.it);
+      else if (c) launch(c.it.package);
+      return;
+    }
     if (zone === "pill") { ti = 2; showTab("scores"); zone = "board"; bi = firstGameRow(); paint(); return; }
     if (zone === "apps") { var a = apps[ai]; if (a) launch(a.package); return; }
   }
