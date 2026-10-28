@@ -81,6 +81,7 @@
     function renderCats(focused) {
       var s = st();
       var from = Math.max(0, Math.min(s.ci - 8, s.cats.length - 18));
+      drawn.catsFrom = from;
       $("tv-cats").innerHTML = s.cats.slice(from, from + 18).map(function (c, i) {
         var at = from + i;
         return '<div class="tv-cat' + (c.id === s.loadedCat ? " on" : "") +
@@ -98,6 +99,7 @@
       var n = cols(), perWindow = mode === "live" ? 60 : n * ROWS_DRAWN;
       var from = Math.max(0, Math.min((Math.floor(s.ii / n) - 2) * n, s.items.length - perWindow));
       if (from < 0) from = 0;
+      drawn.listFrom = from; drawn.listCount = Math.min(perWindow, s.items.length - from);
       el.innerHTML = s.items.slice(from, from + perWindow).map(function (c, i) {
         var at = from + i, focus = focused && sub === "grid" && at === s.ii ? " focus" : "";
         if (mode === "live") {
@@ -148,6 +150,19 @@
     }
 
     // ---------------- keys ----------------
+    // A focus move inside the drawn window only swaps two classes: rebuilding sixty poster nodes
+    // per key press is what makes a weak TV feel like mud.
+    var drawn = { key: "", from: 0 };
+    function focusOnly(el, from, index, cls) {
+      var old = el.getElementsByClassName("focus")[0];
+      if (old) old.classList.remove("focus");
+      var next = el.children[index - from];
+      if (!next || next.classList.contains("tv-none")) return false;
+      next.classList.add("focus");
+      if (next.scrollIntoView) next.scrollIntoView({ block: "nearest" });
+      return true;
+    }
+
     /** Arrows inside the page. Returns "leave" when focus moves back up to the tabs. */
     function move(dx, dy) {
       var s = st();
@@ -160,14 +175,23 @@
       }
       if (sub === "cats") {
         if (dy < 0 && s.ci === 0) return "leave";
-        if (dy) s.ci = Math.max(0, Math.min(s.cats.length - 1, s.ci + dy));
-        else if (dx > 0 && s.items.length) sub = "grid";
+        if (dy) {
+          s.ci = Math.max(0, Math.min(s.cats.length - 1, s.ci + dy));
+          var inRail = s.ci >= drawn.catsFrom + 2 && s.ci < drawn.catsFrom + 16;
+          if (inRail && focusOnly($("tv-cats"), drawn.catsFrom, s.ci)) return "";
+        } else if (dx > 0 && s.items.length) sub = "grid";
       } else {
         var n = cols(), row = Math.floor(s.ii / n);
         if (dx < 0 && s.ii % n === 0) sub = "cats";
         else if (dy < 0 && row === 0) return "leave";
-        else if (dx) { var nx = s.ii + dx; if (nx >= 0 && nx < s.items.length && Math.floor(nx / n) === row) s.ii = nx; }
-        else if (dy) { var ny = s.ii + dy * n; if (ny >= 0) s.ii = Math.min(s.items.length - 1, ny); }
+        else {
+          var to = s.ii;
+          if (dx) { var nx = s.ii + dx; if (nx >= 0 && nx < s.items.length && Math.floor(nx / n) === row) to = nx; }
+          else if (dy) { var ny = s.ii + dy * n; if (ny >= 0) to = Math.min(s.items.length - 1, ny); }
+          s.ii = to;
+          var inWindow = to >= drawn.listFrom + n && to < drawn.listFrom + drawn.listCount - n;
+          if (inWindow && focusOnly($("tv-list"), drawn.listFrom, s.ii)) return "";
+        }
       }
       render(true);
       return "";

@@ -150,3 +150,14 @@ body { background: var(--cj-ground); }
 .rail .tvp { flex: none; width: 11.5rem; }
 .rail .card.slim { flex: none; width: 22rem; height: 12.5rem; }
 #page-home { padding-bottom: 1rem; }
+
+/* ---------------- the TV's low-power pass (the reference design has one too) ----------------
+   Glass blur costs this TV's GPU more than everything else on screen put together, and a
+   forever-running zoom keeps the compositor awake: solid tints and a one-off fade instead. */
+* { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
+.cj-nav { background: rgba(22, 18, 32, 0.92); }
+.tvm, .schip, .score-pill { background: rgba(50, 42, 66, 0.92); }
+.sleep-menu, .gear-pop { background: rgba(28, 24, 40, 0.96); }
+.tv-eps { background: rgba(5, 5, 5, 0.94); }
+.hc-layer.turn { animation: hc-in 600ms ease both; }
+.hbtn.round { background: rgba(255, 255, 255, 0.2); }

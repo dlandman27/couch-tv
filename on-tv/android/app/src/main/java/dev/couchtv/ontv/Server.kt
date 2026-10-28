@@ -186,6 +186,7 @@ class Server(private val ctx: Context, port: Int) : NanoWSD(port) {
             }
             "GET /api/tv/episodes" -> json(200, ok(Live.episodes(q("id") ?: throw ApiError(400, "id is required"))))
             "GET /api/tv/home" -> json(200, if (Live.configured) Live.home() else ok().put("configured", false))
+            "GET /api/tv/search" -> json(200, ok().put("items", Live.search(q("q") ?: "")))
             "POST /api/tv/play" -> {
                 val url = body(s).optString("url").ifEmpty { throw ApiError(400, "url is required") }
                 ctx.startActivity(android.content.Intent(ctx, PlayerActivity::class.java)

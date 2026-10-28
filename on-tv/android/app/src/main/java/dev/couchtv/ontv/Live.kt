@@ -196,6 +196,58 @@ object Live {
         return out
     }
 
+    // ---------------------------------------------------------------- search
+
+    private data class Row(val kind: String, val id: String, val name: String, val logo: String, val ext: String, val rating: Double)
+    private var index: Pair<Long, List<Row>>? = null
+
+    /** A lean index over the whole line (tens of thousands of names), built once, kept six hours. */
+    @Synchronized private fun searchIndex(): List<Row> {
+        index?.let { (at, rows) -> if (System.currentTimeMillis() - at < 6 * 3600_000) return rows }
+        val rows = ArrayList<Row>(60_000)
+        fun pull(kind: String, action: String, idKey: String, logoKey: String) {
+            val c = URL(apiUrl(action)).openConnection() as HttpURLConnection
+            c.connectTimeout = 8000; c.readTimeout = 60_000
+            val body = try { c.inputStream.bufferedReader().readText() } finally { c.disconnect() }
+            val arr = JSONArray(body)   // parsed once and reduced at once; the body is never cached
+            for (i in 0 until arr.length()) {
+                val s = arr.getJSONObject(i)
+                rows.add(Row(kind, s.optString(idKey), s.optString("name"), s.optString(logoKey),
+                    s.optString("container_extension"), s.optDouble("rating_5based", 0.0)))
+            }
+        }
+        runCatching { pull("live", "get_live_streams", "stream_id", "stream_icon") }
+        runCatching { pull("vod", "get_vod_streams", "stream_id", "stream_icon") }
+        runCatching { pull("series", "get_series", "series_id", "cover") }
+        if (rows.isEmpty()) throw ApiError(502, "The line's lists would not load for search.")
+        index = System.currentTimeMillis() to rows
+        return rows
+    }
+
+    /** Name search across live, films and series; films and series first, best prefix matches on top. */
+    fun search(qIn: String): JSONArray {
+        val c = cfg() ?: throw ApiError(409, "No playlist on this TV yet.")
+        val base = c.getString("server"); val u = c.getString("username"); val p = c.getString("password")
+        val q = qIn.trim().lowercase()
+        if (q.length < 2) return JSONArray()
+        val kindRank = mapOf("vod" to 0, "series" to 1, "live" to 2)
+        val hits = searchIndex().asSequence().filter { it.name.lowercase().contains(q) }.take(400).toList()
+            .sortedWith(compareBy({ kindRank[it.kind] ?: 3 }, { !it.name.lowercase().startsWith(q) && !cleanTitle(it.name).first.lowercase().startsWith(q) }))
+            .take(48)
+        val out = JSONArray()
+        for (r in hits) {
+            val (title, year) = cleanTitle(r.name)
+            val o = JSONObject().put("kind", r.kind).put("id", r.id).put("name", title).put("year", year)
+                .put("logo", r.logo).put("rating", r.rating.takeIf { it > 0 } ?: JSONObject.NULL)
+            when (r.kind) {
+                "live" -> o.put("url", "$base/live/$u/$p/${r.id}.m3u8")
+                "vod" -> o.put("url", "$base/movie/$u/$p/${r.id}.${r.ext.ifEmpty { "mp4" }}")
+            }
+            out.put(o)
+        }
+        return out
+    }
+
     /** One series: its seasons, each with playable episodes. */
     fun episodes(seriesId: String): JSONObject {
         val c = cfg() ?: throw ApiError(409, "No playlist on this TV yet.")

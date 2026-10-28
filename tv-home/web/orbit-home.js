@@ -161,6 +161,18 @@
         return "";
       }
       ri = Math.max(0, Math.min(zoneItems() - 1, ri + dx));
+      // a focus move along a row only swaps two classes; rebuilding every rail is what lags
+      var box = sub === "prov" ? $("home-prov") : $("rail-" + sub.slice(4));
+      if (box) {
+        var old = box.getElementsByClassName("focus")[0];
+        if (old) old.classList.remove("focus");
+        var next = box.children[ri];
+        if (next) {
+          next.classList.add("focus");
+          if (next.scrollIntoView) next.scrollIntoView({ block: "nearest", inline: "center" });
+          return "";
+        }
+      }
       render(true);
       return "";
     }
