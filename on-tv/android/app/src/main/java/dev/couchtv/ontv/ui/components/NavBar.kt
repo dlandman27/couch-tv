@@ -12,6 +12,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.tv.material3.Border
 import androidx.tv.material3.ClickableSurfaceDefaults
 import androidx.tv.material3.Surface
@@ -47,7 +48,7 @@ fun NavBar(
         ) {
             TabRow(
                 selectedTabIndex = selected,
-                modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
+                modifier = Modifier.padding(horizontal = 7.dp, vertical = 5.dp),
                 indicator = { tabPositions, doesTabRowHaveFocus ->
                     tabPositions.getOrNull(selected)?.let {
                         TabRowDefaults.PillIndicator(
@@ -69,8 +70,8 @@ fun NavBar(
                             focusedContentColor = Cj.Ink,
                             selectedContentColor = Cj.Ink)
                     ) {
-                        Text(name, style = Cj.Label.copy(color = Color.Unspecified),
-                            modifier = Modifier.padding(horizontal = 18.dp, vertical = 8.dp))
+                        Text(name, style = Cj.Label.copy(color = Color.Unspecified, fontSize = 14.sp),
+                            modifier = Modifier.padding(horizontal = 15.dp, vertical = 6.dp))
                     }
                 }
             }
@@ -84,7 +85,7 @@ fun NavBar(
         ) {
             androidx.compose.foundation.layout.Box(
                 contentAlignment = Alignment.Center,
-                modifier = Modifier.size(44.dp).background(
+                modifier = Modifier.size(38.dp).background(
                     Brush.linearGradient(listOf(Color(0xFFC97B4A), Color(0xFF7A4AC9))), CircleShape)
             ) { Text(who.take(1).uppercase(), style = Cj.Label.copy(color = Color.White)) }
         }

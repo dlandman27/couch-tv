@@ -78,7 +78,7 @@ fun DetailOverlay(
 
         // One top-to-bottom column: the info block up top under the nav, a flexible gap, then the
         // "More like this" rail pinned to the bottom. No overlap at any screen height.
-        Column(Modifier.fillMaxSize().padding(top = 96.dp, bottom = 24.dp)) {
+        Column(Modifier.fillMaxSize().padding(top = 80.dp, bottom = 24.dp)) {
             Column(Modifier.padding(start = 56.dp, end = 40.dp).widthIn(max = 760.dp)) {
                 Text(det?.name ?: fallbackName, style = Cj.HeroTitle, maxLines = 2, overflow = TextOverflow.Ellipsis)
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp),

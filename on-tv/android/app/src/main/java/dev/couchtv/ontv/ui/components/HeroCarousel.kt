@@ -73,8 +73,10 @@ fun HeroCarousel(films: List<UiRepo.Featured>, onPlay: (UiRepo.Featured) -> Unit
         }
     }
 
+    // Height from the screen, not a fixed number, so the title always clears the nav on any TV.
+    val screenH = androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp
     val film = films[at % films.size]
-    Box(modifier = modifier.fillMaxWidth().height(470.dp)) {   // runs up under the floating nav
+    Box(modifier = modifier.fillMaxWidth().height((screenH * 0.72f).dp)) {   // runs up under the floating nav
         AnimatedContent(
             targetState = film,
             transitionSpec = { fadeIn(tween(600)) togetherWith fadeOut(tween(600)) },

@@ -112,7 +112,7 @@ fun CouchApp() {
         // The pages fill the whole screen; the nav floats over them, the reference design's way.
         // Home runs its hero under the glass; every other page starts below it.
         Box(Modifier.fillMaxSize()
-                .padding(top = if (tab == 0) 0.dp else 92.dp)
+                .padding(top = if (tab == 0) 0.dp else 74.dp)
                 // leaving a page upward always lands on the open tab, never the avatar
                 // (the properties must sit before the group they describe)
                 .focusProperties {
@@ -138,9 +138,9 @@ fun CouchApp() {
                 }
         }
         Row(verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.align(Alignment.TopCenter).fillMaxWidth().padding(horizontal = 40.dp, vertical = 14.dp)) {
+            modifier = Modifier.align(Alignment.TopCenter).fillMaxWidth().padding(horizontal = 40.dp, vertical = 10.dp)) {
             AsyncImage(model = "file:///android_asset/www/tv/orbit-logo.png", contentDescription = "orbit",
-                contentScale = ContentScale.Fit, modifier = Modifier.height(30.dp))
+                contentScale = ContentScale.Fit, modifier = Modifier.height(24.dp))
             Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
                 NavBar(tabs, tab, who = people.getOrElse(whoAt) { "·" },
                     onPick = { tab = it; if (it != 1 && it != 2) provCat = null },
