@@ -1,6 +1,7 @@
-// The Orbit look: one hero, tabs, continue watching, a live-score pill. Served by the same bridge
-// as the other looks (config.js + /api/*), runs in the launcher's webview (window.TVOS) or a browser
-// for development (?mock=1 uses mock.js for everything, the same as index.html).
+// The Orbit look's controller: the glass nav, who has focus, and the wiring between pages. Each
+// page owns its own file (orbit-home.js, orbit-apps.js, orbit-tv.js); the sports hub and the
+// score pill live here. Served by the same bridge as the other looks (config.js + /api/*), runs
+// in the launcher's webview (window.TVOS) or a browser (?mock=1 uses mock.js, as index.html does).
 (function () {
   "use strict";
 
@@ -44,14 +45,23 @@
 
   // ---------------- state ----------------
   var TABS = [
-    { id: "foryou", name: "For You" },
-    { id: "apps", name: "Apps" },
-    { id: "tv", name: "Live" },
+    { id: "home", name: "Home", icon: "house" },
+    { id: "movies", name: "Movies" },
+    { id: "shows", name: "Shows" },
+    { id: "livetv", name: "Live TV" },
     { id: "scores", name: "Sports" }
   ];
-  var tab = "foryou";                        // the page being shown
-  var zone = "tabs";                         // tabs | avatar | hero | cards | pill | apps | sfilters | strip | shero | steams
-  var ti = 0, hi = 0, ci = 0, fi = 0, si = 0, yi = 0;
+  var TV_MODE = { movies: "vod", shows: "series", livetv: "live" };
+  var ICONS_NAV = [
+    { id: "apps", label: "Apps", svg: '<svg viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/></svg>' },
+    { id: "settings", label: "Settings", svg: '<svg viewBox="0 0 24 24"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"/><circle cx="12" cy="12" r="3"/></svg>' }
+  ];
+  var HOUSE = '<svg viewBox="0 0 24 24"><path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/><path d="M3 10a2 2 0 0 1 .709-1.528l7-6a2 2 0 0 1 2.582 0l7 6A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>';
+
+  var tab = "home";
+  // zone: tabs | icons | home | tv | eps | apps | sfilters | strip | shero | steams | pill
+  var zone = "tabs";
+  var ti = 0, iw = 0, fi = 0, si = 0, yi = 0;
   var shows = [], people = [], who = null;
   var GAMES = [], LG_NAMES = {}, SP = { leagues: [], follow: [], all_live: [], watch: {} };
   var filter = "all", featId = null, hideScores = false;
@@ -59,7 +69,6 @@
   var pillI = 0, pillTimer = null, scoresTimer = null;
 
   var ICON_PLAY = '<svg viewBox="0 0 24 24"><path d="M8 5.5v13l11-6.5z"/></svg>';
-  var ICON_BALL = '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 3.5v17"/><path d="M5.6 6c3.6 3.5 9.2 3.5 12.8 0M5.6 18c3.6-3.5 9.2-3.5 12.8 0"/></svg>';
   var ICON_CHEV = '<svg viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:2"><path d="M9.5 5.5 16 12l-6.5 6.5"/></svg>';
 
   function banner(pkg) {
@@ -67,98 +76,68 @@
     return "http://tvos.invalid/banner/" + encodeURIComponent(pkg);
   }
 
-  // The Apps page lives in its own file (orbit-apps.js) and owns everything inside the grid.
+  // ---------------- the pages, each in its own file ----------------
   var HOLD_MS = 600;    // how long OK is held to pick an app up
   var APPS = window.ORBIT_APPS({ $: $, esc: esc, api: api, kept: kept, keep: keep, banner: banner,
     launch: function (pkg) { launch(pkg); }, TV: TV });
 
-  // The Live page (the household's TV line) lives in orbit-tv.js the same way.
   var TVL = window.ORBIT_TV({ $: $, esc: esc, api: api, kept: kept, keep: keep });
 
-  // ---------------- header ----------------
-  function renderTabs() {
-    $("tabs").innerHTML = TABS.map(function (t, i) {
-      return '<span class="tab' + (t.id === tab ? " on" : "") + (zone === "tabs" && i === ti ? " focus" : "") + '">' + esc(t.name) + "</span>";
+  var HOME = window.ORBIT_HOME({ $: $, esc: esc, api: api,
+    focused: function () { return zone === "home"; },
+    shows: function () { return shows; },
+    openShow: function (it) { openShow(it); },
+    openSeries: function (it) { TVL.openSeriesById(it.id, it.name); zone = "eps"; },
+    openProvider: function (p) {
+      var toShows = !p.vod && p.series;
+      showTab(toShows ? "shows" : "movies");
+      TVL.setMode(toShows ? "series" : "vod", toShows ? p.series : p.vod);
+      zone = "tv"; TVL.enter();
+      renderNav();
+    }
+  });
+
+  // ---------------- the glass nav ----------------
+  function initNav() {
+    $("nav-tabs").innerHTML = TABS.map(function (t, i) {
+      return '<span class="nav-item" id="navt-' + t.id + '">' + (t.icon ? HOUSE : "") + "<span>" + esc(t.name) + "</span></span>";
     }).join("");
-    $("avatar").className = "avatar" + (zone === "avatar" ? " focus" : "");
+    $("nav-icons").innerHTML = ICONS_NAV.map(function (b) {
+      return '<span class="nav-item is-icon" id="navi-' + b.id + '" aria-label="' + esc(b.label) + '">' + b.svg + "</span>";
+    }).join("");
+  }
+
+  function renderNav() {
+    TABS.forEach(function (t, i) {
+      var el = $("navt-" + t.id);
+      el.className = "nav-item" + (t.id === tab ? " on" : "") + (zone === "tabs" && i === ti ? " focus" : "");
+    });
+    ICONS_NAV.forEach(function (b, i) {
+      var el = $("navi-" + b.id);
+      el.className = "nav-item is-icon" + (tab === "apps" && b.id === "apps" ? " on" : "") + (zone === "icons" && i === iw ? " focus" : "");
+    });
     var p = people.filter(function (x) { return x.id === who; })[0];
     $("avatar").textContent = p ? p.name.charAt(0).toUpperCase() : "·";
+    $("avatar").className = "avatar" + (zone === "icons" && iw === ICONS_NAV.length ? " focus" : "");
+    // the glow pill slides under the active tab
+    var on = $("navt-" + (tab === "apps" ? "home" : tab));
+    var pill = $("nav-pill");
+    if (on && tab !== "apps") {
+      pill.style.opacity = "1";
+      pill.style.transform = "translate3d(" + on.offsetLeft + "px, 0, 0)";
+      pill.style.width = on.offsetWidth + "px";
+    } else pill.style.opacity = "0";
   }
 
   function showTab(id) {
     tab = id;
-    ["foryou", "apps", "tv", "scores"].forEach(function (t) { $("page-" + t).classList.toggle("on", t === id); });
+    var page = { home: "home", movies: "tv", shows: "tv", livetv: "tv", scores: "scores", apps: "apps" }[id];
+    ["home", "tv", "scores", "apps"].forEach(function (t) { $("page-" + t).classList.toggle("on", t === page); });
+    if (TV_MODE[id]) TVL.setMode(TV_MODE[id]);
+    if (id === "home") HOME.ensure();
     if (id === "scores") renderSports();
     if (id === "apps") APPS.render(zone === "apps");
-    if (id === "tv") TVL.ensure();
-    renderTabs();
-  }
-
-  // ---------------- for you ----------------
-  function heroItem() { return shows[0] || null; }
-
-  function renderHero() {
-    var it = heroItem();
-    var art = "";
-    if (it) {
-      art = it.backdrop || it.poster || (it.app && it.app.package ? banner(it.app.package) : "");
-      $("hero-kicker").textContent = "Keep watching";
-      $("hero-title").textContent = it.title || "";
-      var bits = [];
-      if (it.season && it.episode) bits.push("S" + it.season + " · E" + it.episode);
-      if (it.episode_title) bits.push(it.episode_title);
-      if (it.app && it.app.name) bits.push(it.app.name);
-      $("hero-sub").textContent = bits.join("  ·  ");
-    } else {
-      $("hero-kicker").textContent = "Picked for you";
-      $("hero-title").textContent = greeting();
-      $("hero-sub").textContent = "Pick an app, or ask the phone remote to play something.";
-    }
-    if (!art) {   // no show to feature: a scene for the hour keeps the card from sitting empty
-      var h = new Date().getHours();
-      art = "backgrounds/" + (h < 7 ? "scene-night.jpg" : h < 11 ? "scene-dawn.jpg" : h < 16 ? "scene-water.jpg" : h < 20 ? "scene-golden.jpg" : "scene-night.jpg");
-    }
-    $("hero-art").style.backgroundImage = 'url("' + art.replace(/"/g, "") + '")';
-    var btns = ['<span class="hbtn' + (zone === "hero" && hi === 0 ? " focus" : "") + '" id="hb-watch">' + ICON_PLAY + "<span>" + (it ? "Watch" : "Apps") + "</span></span>"];
-    $("hero-btns").innerHTML = btns.join("");
-  }
-
-  function greeting() {
-    var h = new Date().getHours();
-    return h < 5 ? "Up late?" : h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening";
-  }
-
-  function minutesLeftText(it) { return it && it.progress && it.progress.minutes_left ? it.progress.minutes_left + " min left" : ""; }
-
-  /** The card row under the hero: more to keep watching, or the first apps while there is none. */
-  function cardItems() {
-    var cw = shows.slice(1, 5);
-    if (cw.length) return cw.map(function (it) { return { kind: "show", it: it }; });
-    return APPS.top4().map(function (a) { return { kind: "app", it: a }; });
-  }
-
-  function renderCards() {
-    var list = cardItems();
-    var fromShows = list.length && list[0].kind === "show";
-    $("cw-title").textContent = fromShows ? "Continue Watching" : "Your apps";
-    $("cw-title").classList.toggle("none", !list.length);
-    $("cards").classList.toggle("none", !list.length);
-    $("cards").innerHTML = list.map(function (c, i) {
-      var focus = zone === "cards" && i === ci ? " focus" : "";
-      if (c.kind === "app") {
-        return '<div class="card' + focus + '" style="background-image:url(&quot;' + esc(banner(c.it.package)) + '&quot;)">' +
-          '<div class="meta"><span class="name">' + esc(c.it.name) + "</span></div></div>";
-      }
-      var it = c.it;
-      var art = it.backdrop || it.poster || (it.app && it.app.package ? banner(it.app.package) : "");
-      var sub = minutesLeftText(it) || (it.season && it.episode ? "S" + it.season + " E" + it.episode : (it.app && it.app.name) || "");
-      var pct = it.progress && it.progress.percent;
-      return '<div class="card' + focus + '"' +
-        (art ? ' style="background-image:url(&quot;' + esc(art) + '&quot;)"' : "") + ">" +
-        '<div class="meta"><span class="name">' + esc(it.title) + '</span><span class="left">' + esc(sub) + "</span></div>" +
-        (pct ? '<div class="bar"><i style="width:' + Math.min(100, Math.max(2, pct)) + '%"></i></div>' : "") +
-        "</div>";
-    }).join("");
+    renderNav();
   }
 
   // ---------------- score pill ----------------
@@ -205,7 +184,7 @@
       });
   }
 
-  // ---------------- live: the sports hub ----------------
+  // ---------------- the sports hub ----------------
   var SPORT_OF = { nfl: "Football", ncaaf: "Football", nba: "Basketball", mlb: "Baseball", nhl: "Hockey", mls: "Soccer", "eng.1": "Soccer", "uefa.champions": "Soccer" };
 
   /** The filter chips: All Sports, one per sport among the configured leagues, Hide Scores last. */
@@ -325,30 +304,40 @@
   function renderSports() { renderFilters(); renderStrip(); renderSHero(); renderSide(); }
 
   // ---------------- focus and keys ----------------
-  function paint() { renderTabs(); renderHero(); renderCards(); renderPill(); if (tab === "apps") APPS.render(zone === "apps"); if (tab === "tv") TVL.render(zone === "tv"); if (tab === "scores") renderSports(); }
+  function paint() {
+    renderNav();
+    renderPill();
+    if (tab === "home") HOME.render(zone === "home");
+    if (tab === "apps") APPS.render(zone === "apps");
+    if (TV_MODE[tab]) TVL.render(zone === "tv");
+    if (tab === "scores") renderSports();
+  }
 
-  function cardCount() { return cardItems().length; }
+  function enterPage() {
+    if (tab === "home") { zone = "home"; HOME.enter(); }
+    else if (tab === "apps") { zone = "apps"; APPS.focusFirst(); }
+    else if (TV_MODE[tab]) { zone = "tv"; TVL.enter(); }
+    else zone = "sfilters";
+  }
 
   function move(dx, dy) {
+    if (zone === "eps") { TVL.move(dx, dy); return; }
     if (zone === "tabs") {
-      if (dx > 0 && ti === TABS.length - 1) zone = "avatar";
+      if (dx > 0 && ti === TABS.length - 1) { zone = "icons"; iw = 0; }
       else if (dx) ti = Math.max(0, Math.min(TABS.length - 1, ti + dx));
-      else if (dy > 0) zone = tab === "foryou" ? "hero" : tab === "apps" ? "apps" : tab === "tv" ? "tv" : "sfilters";
-    } else if (zone === "avatar") {
-      if (dx < 0) zone = "tabs";
-      else if (dy > 0) zone = tab === "foryou" ? "hero" : tab === "apps" ? "apps" : tab === "tv" ? "tv" : "sfilters";
+      else if (dy > 0) enterPage();
+    } else if (zone === "icons") {
+      if (dx < 0 && iw === 0) zone = "tabs";
+      else if (dx) iw = Math.max(0, Math.min(ICONS_NAV.length, iw + dx));
+      else if (dy > 0) enterPage();
+    } else if (zone === "home") {
+      var r = HOME.move(dx, dy);
+      if (r === "leave") zone = "tabs";
+      else if (r === "pill" && pillGames().length) zone = "pill";
     } else if (zone === "tv") {
       if (TVL.move(dx, dy) === "leave") zone = "tabs";
-    } else if (zone === "hero") {
-      if (dy < 0) zone = "tabs";
-      else if (dy > 0) { if (cardCount()) { zone = "cards"; ci = 0; } else if (pillGames().length) zone = "pill"; }
-    } else if (zone === "cards") {
-      if (dy < 0) zone = "hero";
-      else if (dy > 0 && pillGames().length) zone = "pill";
-      else if (dx > 0 && ci === cardCount() - 1 && pillGames().length) zone = "pill";
-      else if (dx) ci = Math.max(0, Math.min(cardCount() - 1, ci + dx));
     } else if (zone === "pill") {
-      if (dy < 0 || dx < 0) zone = cardCount() ? "cards" : "hero";
+      if (dy < 0 || dx < 0) zone = tab === "home" ? "home" : "tabs";
     } else if (zone === "apps") {
       if (APPS.move(dx, dy) === "leave") zone = "tabs";
     } else if (zone === "sfilters") {
@@ -371,23 +360,19 @@
   }
 
   function activate() {
+    if (zone === "eps") { TVL.ok(); return; }
     if (zone === "tabs") { showTab(TABS[ti].id); return; }
-    if (zone === "avatar") { nextWho(); return; }
-    if (zone === "hero") {
-      var it = heroItem();
-      if (!it) { ti = 1; APPS.focusFirst(); zone = "apps"; showTab("apps"); paint(); return; }
-      openShow(it);
+    if (zone === "icons") {
+      if (iw === ICONS_NAV.length) { nextWho(); return; }
+      var b = ICONS_NAV[iw];
+      if (b.id === "apps") { showTab("apps"); enterPage(); paint(); }
+      else if (b.id === "settings") api("POST", "/api/launch", { app: "settings" }).catch(function () {});
       return;
     }
-    if (zone === "cards") {
-      var c = cardItems()[ci];
-      if (c && c.kind === "show") openShow(c.it);
-      else if (c) launch(c.it.package);
-      return;
-    }
-    if (zone === "pill") { ti = 3; showTab("scores"); zone = stripGames().length ? "strip" : "sfilters"; si = 0; paint(); return; }
-    if (zone === "apps") { APPS.ok(); return; }
+    if (zone === "home") { HOME.ok(); return; }
     if (zone === "tv") { TVL.ok(); return; }
+    if (zone === "pill") { showTab("scores"); ti = 4; zone = stripGames().length ? "strip" : "sfilters"; si = 0; paint(); return; }
+    if (zone === "apps") { APPS.ok(); return; }
     if (zone === "sfilters") {
       var ch = sportChips()[fi];
       if (!ch) return;
@@ -405,10 +390,11 @@
 
   function back() {
     if (APPS.cancel()) return;   // an app in hand goes back where it was
-    if (zone === "tv" && TVL.back()) return;   // the series overlay closes first
-    if (zone === "tabs" || zone === "avatar") { if (tab !== "foryou") { ti = 0; showTab("foryou"); } return; }
+    if (zone === "eps") { TVL.back(); zone = tab === "home" ? "home" : "tv"; paint(); return; }
+    if (zone === "tv" && TVL.back()) return;
+    if (zone === "tabs" || zone === "icons") { if (tab !== "home") { ti = 0; showTab("home"); } return; }
     zone = "tabs";
-    ti = TABS.map(function (t) { return t.id; }).indexOf(tab);
+    ti = Math.max(0, TABS.map(function (t) { return t.id; }).indexOf(tab));
     paint();
   }
 
@@ -427,7 +413,7 @@
     var i = people.map(function (p) { return p.id; }).indexOf(who);
     who = people[(i + 1) % people.length].id;
     api("POST", "/api/who", { who: who }).catch(function () {});
-    renderTabs();
+    renderNav();
     loadShows();
   }
 
@@ -464,7 +450,7 @@
   // the launcher calls these
   window.tv = {
     back: back,
-    home: function () { okReset(); APPS.cancel(); ti = 0; zone = "tabs"; showTab("foryou"); refreshAll(); },
+    home: function () { okReset(); APPS.cancel(); TVL.back(); ti = 0; zone = "tabs"; showTab("home"); refreshAll(); },
     resume: function () { okReset(); refreshAll(); },
     photosAdded: function () {}
   };
@@ -473,7 +459,7 @@
   function loadShows() {
     return api("GET", "/api/continue" + (who ? "?who=" + encodeURIComponent(who) : ""))
       .then(function (j) { shows = j.items || []; }, function () {})
-      .then(function () { renderHero(); renderCards(); });
+      .then(function () { if (tab === "home") HOME.render(zone === "home"); });
   }
 
   function loadSettings() {
@@ -503,6 +489,7 @@
   function start() {
     CFG = window.COUCH_CONFIG || {};
     APPS.hidePackages(CFG.home && CFG.home.hide_packages);
+    initNav();
 
     // the pill takes turns through the games
     pillTimer = setInterval(function () { if (pillGames().length > 1) { pillI++; renderPill(); } }, 6000);

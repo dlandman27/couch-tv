@@ -28,6 +28,8 @@
     var APP_LAST = ["com.mediatek.wwtv.tvcenter"];
 
     var apps = [], ai = 0, focused = false;
+    var where = "grid";                           // focus within the page: "grid" | "head" (the sort chip)
+    var sortMode = kept("orbit.apps.sort") === "az" ? "az" : "custom";   // "custom" = the saved order
     var ORDER = { line: 10, packages: null };     // the saved arrangement
     var lift = null;                              // the app picked up to move: its package
     var liftWas = null;                           // the order to go back to if Back puts it down
@@ -58,6 +60,25 @@
       var pinned = apps.filter(function (a) { return !orderable(a); })
         .sort(function (a, b) { return PINNED.indexOf(a.package) - PINNED.indexOf(b.package); });
       apps = movable.concat(pinned);
+    }
+
+    // The view order: the saved custom order, or A–Z (the TV's own tools stay pinned at the end
+    // either way). Toggling never changes the saved order; it is only how the grid is shown.
+    function applySort() {
+      if (sortMode === "az") {
+        var movable = apps.filter(orderable).sort(function (a, b) { return a.name.localeCompare(b.name); });
+        apps = movable.concat(apps.filter(function (a) { return !orderable(a); }));
+      } else {
+        sortApps();
+      }
+      builtKey = "";
+    }
+    function toggleSort() {
+      sortMode = sortMode === "az" ? "custom" : "az";
+      keep("orbit.apps.sort", sortMode);
+      applySort();
+      ai = 0; scrollRow = 0;
+      render(focused);
     }
 
     // The order lives with the bridge (/api/app-order, the one the phone's Arrange apps edits); an
@@ -140,8 +161,13 @@
     function paint() {
       for (var i = 0; i < gridEls.length; i++) {
         gridEls[i].className = "appc" +
-          (focused && i === ai && !lift ? " focus" : "") +
+          (focused && where === "grid" && i === ai && !lift ? " focus" : "") +
           (lift && apps[i] && apps[i].package === lift ? " lift" : "");
+      }
+      var sort = $("apps-sort");
+      if (sort) {
+        sort.textContent = sortMode === "az" ? "A–Z" : "Custom";
+        sort.className = "apps-sort" + (focused && where === "head" ? " focus" : "");
       }
       follow();
       hint();
@@ -149,7 +175,10 @@
 
     function hint() {
       $("apps-hint").textContent = hintFlash ||
-        (lift ? "Move with the arrows · OK drops it · Back puts it back" : "Hold OK to move an app");
+        (lift ? "Move with the arrows · OK drops it · Back puts it back" :
+         where === "head" ? "OK switches between your order and A–Z" :
+         sortMode === "az" ? "Sorted A–Z · switch to Custom up top to move apps" :
+         "Hold OK to move an app");
     }
     function flash(text) {
       clearTimeout(hintTimer);
@@ -204,8 +233,13 @@
     }
 
     // ---------------- what orbit.js calls ----------------
-    /** Arrows inside the grid. "leave": focus walks off the top, back to the tabs. */
+    /** Arrows inside the page. "leave": focus walks off the top, back to the tabs. */
     function move(dx, dy) {
+      if (where === "head") {              // on the sort chip above the grid
+        if (dy > 0) where = "grid";        // down, back into the apps
+        else if (dy < 0) return "leave";   // up, out to the tabs
+        return;
+      }
       var row = Math.floor(ai / COLS);
       if (lift) {
         // the picked-up app rides the arrows; left and right cross rows, up and down keep the column
@@ -217,7 +251,7 @@
         }
         return;
       }
-      if (dy < 0 && row === 0) return "leave";
+      if (dy < 0 && row === 0) { where = "head"; return; }   // up from the top row: the sort chip
       if (dx) { var nx = ai + dx; if (nx >= 0 && nx < apps.length && Math.floor(nx / COLS) === row) ai = nx; }
       else if (dy) {
         var ny = ai + dy * COLS;
@@ -228,6 +262,8 @@
 
     /** OK held: pick the focused app up. True when the hold meant something here. */
     function hold() {
+      if (where === "head") return true;   // nothing to pick up on the sort chip
+      if (sortMode === "az") { flash("Switch to Custom up top to move apps."); return true; }
       var a = apps[ai];
       if (!a) return false;
       if (!orderable(a)) { flash(a.name + " stays put."); return true; }
@@ -237,8 +273,9 @@
       return true;
     }
 
-    /** OK let go: drop the moved app where it is, or open the focused one. */
+    /** OK let go: flip the sort, drop the moved app, or open the focused one. */
     function ok() {
+      if (where === "head") { toggleSort(); return; }
       if (lift) {
         lift = null; liftWas = null;
         persistOrder();
@@ -264,7 +301,7 @@
 
     /** The saved order and the TV's apps; resolves once both answered (or failed quietly). */
     function load() {
-      var done = function () { sortApps(); detectNew(); builtKey = ""; };
+      var done = function () { applySort(); detectNew(); builtKey = ""; };
       return loadOrder().then(function () {
         if (window.MOCK_APPS) {
           apps = window.MOCK_APPS.map(function (a) { return { name: a.name, package: a.package }; }).filter(shown);
@@ -293,7 +330,7 @@
       cancel: cancel,
       lifting: function () { return !!lift; },
       top4: function () { return apps.slice(0, 4); },
-      focusFirst: function () { ai = 0; scrollRow = 0; },
+      focusFirst: function () { ai = 0; scrollRow = 0; where = "grid"; },
       hidePackages: function (list) {
         (Array.isArray(list) ? list : []).forEach(function (p) {
           if (typeof p === "string" && HIDDEN.indexOf(p) < 0) HIDDEN.push(p);

@@ -8,6 +8,7 @@
   window.ORBIT_TV = function (ctx) {
     var $ = ctx.$, esc = ctx.esc, api = ctx.api, kept = ctx.kept, keep = ctx.keep;
 
+    // The three catalogues are top-level tabs now; the header sets the mode with setMode().
     var MODES = [
       { id: "live", name: "Live TV", cols: 1 },
       { id: "vod", name: "Movies", cols: 7 },
@@ -19,7 +20,7 @@
     function freshState() { return { cats: [], items: [], ci: 0, ii: 0, loadedCat: null, note: "", ready: false }; }
     var S = { live: freshState(), vod: freshState(), series: freshState() };
     var mode = kept("orbit.tv.mode") || "live";
-    var sub = "modes";                     // modes | cats | grid | eps
+    var sub = "cats";                      // cats | grid (the series overlay is its own layer)
     var mi = 0, configured = null;
     var eps = null, epSeason = 0, epI = 0, epFor = null;   // the series overlay
 
@@ -75,12 +76,6 @@
       var out = '<span class="tvp-stars">';
       for (var i = 1; i <= 5; i++) out += '<svg viewBox="0 0 24 24" class="' + (i <= Math.round(r) ? "fill" : "") + '"><path d="M12 3l2.7 5.8 6.3.7-4.7 4.3 1.3 6.2-5.6-3.2-5.6 3.2 1.3-6.2L3 9.5l6.3-.7z"/></svg>';
       return out + "</span>";
-    }
-
-    function renderModes(focused) {
-      $("tv-modes").innerHTML = MODES.map(function (m, i) {
-        return '<span class="tvm' + (m.id === mode ? " on" : "") + (focused && sub === "modes" && i === mi ? " focus" : "") + '">' + esc(m.name) + "</span>";
-      }).join("");
     }
 
     function renderCats(focused) {
@@ -140,11 +135,10 @@
     function render(focused) {
       if (!$("page-tv")) return;
       if (configured === false) {
-        $("tv-modes").innerHTML = ""; $("tv-cats").innerHTML = "";
+        $("tv-cats").innerHTML = "";
         $("tv-list").innerHTML = '<p class="tv-none">No TV line on this TV yet. Add your playlist’s server, username and password in settings.</p>';
         return;
       }
-      renderModes(focused);
       if (!st().ready) { $("tv-cats").innerHTML = ""; $("tv-list").innerHTML = '<p class="tv-none">' + esc(st().note || "Loading your line…") + "</p>"; renderEps(focused); return; }
       renderCats(focused);
       renderItems(focused);
@@ -164,18 +158,14 @@
         render(true);
         return "";
       }
-      if (sub === "modes") {
-        if (dy < 0) return "leave";
-        if (dx) { mi = Math.max(0, Math.min(MODES.length - 1, mi + dx)); setMode(MODES[mi].id); return ""; }
-        if (dy > 0) sub = s.cats.length ? "cats" : "grid";
-      } else if (sub === "cats") {
-        if (dy < 0 && s.ci === 0) { sub = "modes"; render(true); return ""; }
+      if (sub === "cats") {
+        if (dy < 0 && s.ci === 0) return "leave";
         if (dy) s.ci = Math.max(0, Math.min(s.cats.length - 1, s.ci + dy));
         else if (dx > 0 && s.items.length) sub = "grid";
       } else {
         var n = cols(), row = Math.floor(s.ii / n);
         if (dx < 0 && s.ii % n === 0) sub = "cats";
-        else if (dy < 0 && row === 0) { sub = "modes"; render(true); return ""; }
+        else if (dy < 0 && row === 0) return "leave";
         else if (dx) { var nx = s.ii + dx; if (nx >= 0 && nx < s.items.length && Math.floor(nx / n) === row) s.ii = nx; }
         else if (dy) { var ny = s.ii + dy * n; if (ny >= 0) s.ii = Math.min(s.items.length - 1, ny); }
       }
@@ -183,9 +173,12 @@
       return "";
     }
 
-    function setMode(id) {
+    /** The header's Movies, Shows and Live TV tabs pick the catalogue. */
+    function setMode(id, catId) {
       mode = id;
       keep("orbit.tv.mode", id);
+      if (catId) keep("orbit.tv.cat." + id, catId);
+      if (catId && S[id].ready) { S[id].ci = Math.max(0, S[id].cats.map(function (c) { return c.id; }).indexOf(catId)); loadCat(catId); return; }
       ensure();
     }
 
@@ -196,7 +189,6 @@
         if (e) { play(e.url); }
         return;
       }
-      if (sub === "modes") { setMode(MODES[mi].id); return; }
       if (sub === "cats") { var c = s.cats[s.ci]; if (c) loadCat(c.id); return; }
       var it = s.items[s.ii];
       if (!it) return;
@@ -212,8 +204,13 @@
       return true;
     }
 
-    function enter() { sub = "modes"; ensure(); }
+    function enter() { sub = "cats"; ensure(); }
 
-    return { render: render, move: move, ok: ok, back: back, enter: enter, ensure: ensure };
+    /** The home page's series rail opens the overlay from anywhere. */
+    function openSeriesById(id, name) { openSeries({ id: id, name: name }); }
+    function overlayOpen() { return !!eps; }
+
+    return { render: render, move: move, ok: ok, back: back, enter: enter, ensure: ensure,
+      setMode: setMode, openSeriesById: openSeriesById, overlayOpen: overlayOpen };
   };
 })();

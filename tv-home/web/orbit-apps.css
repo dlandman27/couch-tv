@@ -1,9 +1,20 @@
 /* The Apps page of the Orbit look (orbit-apps.js). Same ruler as orbit.css: 1rem = 16px at 1080p. */
 
-.apps-head { display: flex; align-items: baseline; justify-content: space-between; margin: 0.25rem 0.25rem 1rem; }
+.apps-head { display: flex; align-items: center; justify-content: space-between; margin: 0.25rem 0.25rem 1rem; }
 .apps-title { margin: 0; font-size: 1.875rem; font-weight: 700; letter-spacing: -0.01em; }
 .apps-count { margin-left: 0.5rem; font-size: 1.25rem; font-weight: 550; color: rgba(255, 255, 255, 0.45); }
+.apps-tools { display: flex; align-items: center; gap: 1.5rem; }
 .apps-hint { margin: 0; font-size: 1.25rem; font-weight: 500; color: rgba(255, 255, 255, 0.55); }
+
+/* the Custom / A–Z sort toggle, a focusable chip above the grid */
+.apps-sort {
+  padding: 0.5rem 1.375rem; border-radius: 1.75rem; font-size: 1.1875rem; font-weight: 650; white-space: nowrap;
+  color: rgba(255, 255, 255, 0.82); background: rgba(16, 20, 34, 0.6);
+  box-shadow: inset 0 0 0 0.0625rem rgba(255, 255, 255, 0.1);
+  transition: transform 160ms ease, box-shadow 160ms ease, color 160ms ease;
+}
+.apps-sort::before { content: "\21c5"; margin-right: 0.5rem; opacity: 0.7; }
+.apps-sort.focus { color: #10131c; background: #fff; transform: scale(1.06); box-shadow: 0 0 0 0.1875rem rgba(255, 255, 255, 0.9); }
 
 /* The grid slides inside this window; the padding is breathing room for the focus ring and the
    lift, so a tile is never clipped mid-scale. The fades say there is more above or below. */

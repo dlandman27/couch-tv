@@ -16,24 +16,23 @@
 
 <header class="top">
   <div class="brand"><img src="orbit-logo.png" alt="orbit"></div>
-  <nav class="tabs" id="tabs"></nav>
+  <!-- the glass nav: tab pills with a sliding glow, a divider, then the icon buttons (orbit.js fills it) -->
+  <nav class="cj-nav" id="nav" role="tablist">
+    <div class="nav-pill" id="nav-pill" aria-hidden="true"></div>
+    <div class="nav-items" id="nav-tabs"></div>
+    <span class="nav-divider" aria-hidden="true"></span>
+    <div class="nav-items" id="nav-icons"></div>
+  </nav>
   <div class="avatar" id="avatar" role="button" aria-label="Who is watching"></div>
 </header>
 
 <main>
-  <!-- For You -->
-  <section class="page" id="page-foryou">
-    <div class="hero" id="hero">
-      <div class="hero-art" id="hero-art"></div>
-      <div class="hero-text">
-        <p class="hero-kicker" id="hero-kicker"></p>
-        <h1 class="hero-title" id="hero-title"></h1>
-        <p class="hero-sub" id="hero-sub"></p>
-        <div class="hero-btns" id="hero-btns"></div>
-      </div>
-    </div>
-    <h2 class="row-title" id="cw-title">Continue Watching</h2>
-    <div class="cards" id="cards"></div>
+  <!-- Home: the hero carousel, providers and rails (orbit-home.js) -->
+  <section class="page" id="page-home">
+    <div class="hc" id="hc"></div>
+    <h2 class="row-title" id="home-prov-title">Browse by Provider</h2>
+    <div class="prov-row" id="home-prov"></div>
+    <div class="home-rows" id="home-rows"></div>
     <div class="score-pill" id="score-pill" role="button"></div>
   </section>
 
@@ -41,21 +40,22 @@
   <section class="page" id="page-apps">
     <div class="apps-head">
       <h2 class="apps-title">Apps <span class="apps-count" id="apps-count"></span></h2>
-      <p class="apps-hint" id="apps-hint">Hold OK to move an app</p>
+      <div class="apps-tools">
+        <p class="apps-hint" id="apps-hint">Hold OK to move an app</p>
+        <span class="apps-sort" id="apps-sort" role="button">Custom</span>
+      </div>
     </div>
     <div class="apps-view" id="apps-view">
       <div class="app-grid" id="app-grid"></div>
     </div>
   </section>
 
-  <!-- Live: the household's own TV line (orbit-tv.js) -->
+  <!-- Movies, Shows and Live TV share this page; the header tab picks the catalogue (orbit-tv.js) -->
   <section class="page" id="page-tv">
-    <div class="tv-modes" id="tv-modes"></div>
     <div class="tv-wrap">
       <aside class="tv-cats" id="tv-cats"></aside>
       <div class="tv-list" id="tv-list"></div>
     </div>
-    <div class="tv-eps" id="tv-eps"></div>
   </section>
 
   <!-- Sports hub -->
@@ -72,9 +72,13 @@
   </section>
 </main>
 
+<!-- a series' seasons and episodes, over whichever page opened it -->
+<div class="tv-eps" id="tv-eps"></div>
+
 <script src="config.js"></script>
 <script src="orbit-apps.js"></script>
 <script src="orbit-tv.js"></script>
+<script src="orbit-home.js"></script>
 <script src="orbit.js"></script>
 </body>
 </html>

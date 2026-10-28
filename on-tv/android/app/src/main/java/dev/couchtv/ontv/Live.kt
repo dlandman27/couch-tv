@@ -93,6 +93,109 @@ object Live {
         return out
     }
 
+    // ---------------------------------------------------------------- the home rails
+
+    // "EN - The Weight (2026)" and "4K-OSN+ - Dune (2021) (US)" become a title and a year.
+    private val PREFIX = Regex("^(?:4K-|8K-)?[A-Z]{2}[A-Za-z+]*\\s*-\\s*")
+    private val YEAR = Regex("\\s*\\((\\d{4})\\)\\s*(?:\\([A-Z]{2}\\))?\\s*$")
+
+    fun cleanTitle(name: String): Pair<String, String> {
+        var t = name.replace(PREFIX, "")
+        var year = ""
+        YEAR.find(t)?.let { year = it.groupValues[1]; t = t.substring(0, it.range.first) }
+        return t.trim() to year
+    }
+
+    private fun firstCat(kind: String, vararg wanted: String): JSONObject? {
+        val cats = categories(kind)
+        for (w in wanted) for (i in 0 until cats.length()) {
+            val c = cats.getJSONObject(i)
+            if (c.optString("name").uppercase().contains(w)) return c
+        }
+        return if (cats.length() > 0) cats.getJSONObject(0) else null
+    }
+
+    /** One film's detail (plot, genre, backdrop), straight off the line. */
+    private fun vodInfo(id: String): JSONObject =
+        JSONObject(fetch(apiUrl("get_vod_info", "&vod_id=$id"), 24 * 3600_000)).optJSONObject("info") ?: JSONObject()
+
+    private fun railItem(s: JSONObject, kind: String): JSONObject {
+        val (title, year) = cleanTitle(s.optString("name"))
+        return JSONObject().put("id", s.optString(if (kind == "series") "series_id" else "stream_id"))
+            .put("kind", kind).put("name", title).put("year", year)
+            .put("logo", s.optString(if (kind == "series") "cover" else "stream_icon"))
+            .put("rating", s.optDouble("rating_5based", 0.0).takeIf { it > 0 } ?: JSONObject.NULL)
+    }
+
+    /**
+     * Everything the home page's hero and rails need, in one call: the newest films with their
+     * backdrops and plots, a trending series row, and the branded groups the line carries.
+     */
+    @Synchronized fun home(): JSONObject {
+        homeCache?.let { (at, j) -> if (System.currentTimeMillis() - at < 6 * 3600_000) return JSONObject(j.toString()) }
+        val c = cfg() ?: throw ApiError(409, "No playlist on this TV yet.")
+        val base = c.getString("server"); val u = c.getString("username"); val p = c.getString("password")
+
+        val newCat = firstCat("vod", "NEW RELEASE", "TRENDING", "NEW") ?: throw ApiError(502, "The line lists no film groups.")
+        val rows = JSONArray(fetch(apiUrl("get_vod_streams", "&category_id=${newCat.getString("id")}"), 3600_000))
+        val byAdded = (0 until rows.length()).map { rows.getJSONObject(it) }
+            .sortedByDescending { it.optString("added").toLongOrNull() ?: 0 }
+
+        val featured = JSONArray()
+        for (s in byAdded.take(7)) {
+            val id = s.optString("stream_id")
+            val info = runCatching { vodInfo(id) }.getOrDefault(JSONObject())
+            val backdrop = info.optJSONArray("backdrop_path")?.optString(0)?.ifEmpty { null }
+            val (title, year) = cleanTitle(s.optString("name"))
+            featured.put(JSONObject().put("id", id).put("kind", "vod").put("name", title).put("year", year)
+                .put("poster", s.optString("stream_icon")).put("backdrop", backdrop ?: s.optString("stream_icon"))
+                .put("plot", info.optString("plot").ifEmpty { info.optString("description") })
+                .put("genre", info.optString("genre")).put("rating", s.optDouble("rating_5based", 0.0).takeIf { it > 0 } ?: JSONObject.NULL)
+                .put("url", "$base/movie/$u/$p/$id.${s.optString("container_extension").ifEmpty { "mp4" }}"))
+        }
+
+        val movies = JSONArray().also { arr -> byAdded.drop(7).take(15).forEach { s ->
+            arr.put(railItem(s, "vod").put("url", "$base/movie/$u/$p/${s.optString("stream_id")}.${s.optString("container_extension").ifEmpty { "mp4" }}")) } }
+
+        val seriesCat = firstCat("series", "NETFLIX SERIES", "TRENDING", "OSN")
+        val series = JSONArray()
+        seriesCat?.let {
+            val sr = JSONArray(fetch(apiUrl("get_series", "&category_id=${it.getString("id")}"), 3600_000))
+            val bySeen = (0 until sr.length()).map { i -> sr.getJSONObject(i) }
+                .sortedByDescending { r -> r.optString("last_modified").toLongOrNull() ?: 0 }
+            bySeen.take(15).forEach { r -> series.put(railItem(r, "series")) }
+        }
+
+        val out = JSONObject().put("ok", true).put("featured", featured).put("movies", movies)
+            .put("series", series).put("providers", providers())
+        homeCache = System.currentTimeMillis() to out
+        return JSONObject(out.toString())
+    }
+    private var homeCache: Pair<Long, JSONObject>? = null
+
+    /** The branded groups the line carries, for the Browse by Provider row. */
+    private fun providers(): JSONArray {
+        val brands = listOf("NETFLIX" to "Netflix", "OSN" to "OSN+", "DISNEY" to "Disney+", "APPLE" to "Apple TV+",
+            "PRIME" to "Prime Video", "HBO" to "HBO Max", "PARAMOUNT" to "Paramount+", "CRUNCHYROLL" to "Crunchyroll",
+            "DISCOVERY" to "discovery+", "HULU" to "Hulu", "PEACOCK" to "Peacock", "STARZ" to "Starz")
+        val out = JSONArray()
+        val vodCats = runCatching { categories("vod") }.getOrDefault(JSONArray())
+        val serCats = runCatching { categories("series") }.getOrDefault(JSONArray())
+        fun find(cats: JSONArray, key: String): String? {
+            for (i in 0 until cats.length()) {
+                val c = cats.getJSONObject(i)
+                if (c.optString("name").uppercase().contains(key)) return c.optString("id")
+            }
+            return null
+        }
+        for ((key, name) in brands) {
+            val vod = find(vodCats, key); val ser = find(serCats, key)
+            if (vod != null || ser != null) out.put(JSONObject().put("id", key.lowercase()).put("name", name)
+                .put("vod", vod ?: JSONObject.NULL).put("series", ser ?: JSONObject.NULL))
+        }
+        return out
+    }
+
     /** One series: its seasons, each with playable episodes. */
     fun episodes(seriesId: String): JSONObject {
         val c = cfg() ?: throw ApiError(409, "No playlist on this TV yet.")
