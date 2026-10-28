@@ -1,0 +1,59 @@
+/* The Apps page of the Orbit look (orbit-apps.js). Same ruler as orbit.css: 1rem = 16px at 1080p. */
+
+.apps-head { display: flex; align-items: baseline; justify-content: space-between; margin: 0.25rem 0.25rem 1rem; }
+.apps-title { margin: 0; font-size: 1.875rem; font-weight: 700; letter-spacing: -0.01em; }
+.apps-count { margin-left: 0.5rem; font-size: 1.25rem; font-weight: 550; color: rgba(255, 255, 255, 0.45); }
+.apps-hint { margin: 0; font-size: 1.25rem; font-weight: 500; color: rgba(255, 255, 255, 0.55); }
+
+/* The grid slides inside this window; the padding is breathing room for the focus ring and the
+   lift, so a tile is never clipped mid-scale. The fades say there is more above or below. */
+.apps-view { position: relative; height: calc(100vh - 12.25rem); margin: 0 -1.5rem; padding: 1rem 1.5rem; overflow: hidden; }
+.apps-view.fade-top { -webkit-mask-image: linear-gradient(180deg, transparent, #000 2rem); mask-image: linear-gradient(180deg, transparent, #000 2rem); }
+.apps-view.fade-bot { -webkit-mask-image: linear-gradient(180deg, #000 calc(100% - 2.5rem), transparent); mask-image: linear-gradient(180deg, #000 calc(100% - 2.5rem), transparent); }
+.apps-view.fade-top.fade-bot {
+  -webkit-mask-image: linear-gradient(180deg, transparent, #000 2rem, #000 calc(100% - 2.5rem), transparent);
+  mask-image: linear-gradient(180deg, transparent, #000 2rem, #000 calc(100% - 2.5rem), transparent);
+}
+.app-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 1.625rem 1.375rem; transition: transform 280ms ease; will-change: transform; }
+
+.appc { position: relative; transition: transform 220ms ease; }   /* the transform is the slide when apps move */
+.appc.focus, .appc.lift { z-index: 1; }
+.appc .art {
+  position: relative; aspect-ratio: 16 / 9; border-radius: 1rem; overflow: hidden;
+  box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.35), inset 0 0 0 0.0625rem rgba(255, 255, 255, 0.07);
+  transition: transform 160ms ease, box-shadow 160ms ease;
+}
+.appc .mono {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  font-size: 3.25rem; font-weight: 750; color: rgba(255, 255, 255, 0.92);
+  text-shadow: 0 0.125rem 0.75rem rgba(0, 0, 0, 0.35);
+}
+.appc img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.appc img.logo { object-fit: contain; padding: 12% 24%; }   /* dev previews: a square logo on the monogram's colour */
+.appc img.bad { display: none; }                            /* no banner came: the monogram stays */
+.appc .alabel {
+  margin-top: 0.625rem; text-align: center; font-size: 1.1875rem; font-weight: 600;
+  color: rgba(255, 255, 255, 0.55); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  transition: color 160ms ease;
+}
+.appc.focus .art { transform: scale(1.07); box-shadow: 0 0 0 0.25rem #fff, 0 1rem 2rem rgba(0, 0, 0, 0.5); }
+.appc.focus .alabel, .appc.lift .alabel { color: #fff; }
+
+/* picked up: bigger, a blue ring, and a slow sway while it rides the arrows */
+.appc.lift .art {
+  animation: appc-sway 1.4s ease-in-out infinite;
+  box-shadow: 0 0 0 0.25rem #8fd3ff, 0 1.5rem 3rem rgba(0, 0, 0, 0.6);
+}
+@keyframes appc-sway {
+  0%, 100% { transform: scale(1.1) rotate(-0.7deg); }
+  50% { transform: scale(1.1) rotate(0.7deg); }
+}
+
+/* installed since the TV first listed its apps, until opened once */
+.appc .dot {
+  position: absolute; top: -0.4375rem; right: -0.4375rem; z-index: 2; margin: 0;
+  width: 1.125rem; height: 1.125rem; border-radius: 50%;
+  background: #8fd3ff; box-shadow: 0 0 0 0.1875rem #060a14;
+}
+
+.apps-empty { grid-column: 1 / -1; padding: 3rem 0; text-align: center; font-size: 1.5rem; color: rgba(255, 255, 255, 0.6); }

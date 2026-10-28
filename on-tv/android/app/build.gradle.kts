@@ -40,6 +40,10 @@ dependencies {
     implementation("org.conscrypt:conscrypt-android:2.5.3")
     // Makes the self-signed certificate the ADB TLS handshake needs.
     implementation("org.bouncycastle:bcpkix-jdk15to18:1.81")
+    // Plays the Live tab's streams (HLS and plain files).
+    implementation("androidx.media3:media3-exoplayer:1.3.1")
+    implementation("androidx.media3:media3-exoplayer-hls:1.3.1")
+    implementation("androidx.media3:media3-ui:1.3.1")
 }
 
 // The phone remote and the TV home are built elsewhere in the repo. Copy them in before every build.
@@ -52,7 +56,7 @@ val copyWeb by tasks.registering(Copy::class) {
     description = "Copies the phone remote, the TV home page and the on-TV web files into assets."
     into(layout.projectDirectory.dir("src/main/assets/www"))
     from(remoteDist) { into("remote") }
-    from(tvHomeWeb) { into("tv"); exclude("mock.js") }
+    from(tvHomeWeb) { into("tv"); exclude("mock.js", "node_modules/**", "package.json", "package-lock.json", "cine.src.css") }
     from(file("../../web")) { into("ontv") }
     doFirst {
         if (!File(remoteDist, "index.html").isFile) throw GradleException("No phone remote build at $remoteDist. Run npm run build in remote/ first.")

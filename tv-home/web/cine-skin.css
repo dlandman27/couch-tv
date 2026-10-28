@@ -1,0 +1,82 @@
+/* The Cinejoy skin: the reference design's palette over the Orbit layout, plus the Live tab's
+   poster walls and series overlay. Loaded after orbit.css, so these rules win where they overlap. */
+
+:root {
+  --cj-ground: #050505;
+  --cj-surface: #1d1728;
+  --cj-surface2: #251e32;
+  --cj-hover: #302741;
+  --cj-pill: rgba(60, 50, 79, 0.6);
+  --cj-hi: #7a6bae;
+  --cj-accent: #95ff50;
+  --cj-text: #beb3d6;
+  --cj-dim: #756790;
+  --cj-display: "Montserrat", Inter, system-ui, sans-serif;
+}
+
+/* ground and ambient bleed: near-black with a faint warm-purple glow, like the reference */
+body { background: var(--cj-ground); }
+.bg { background:
+  radial-gradient(70rem 36rem at 70% -5%, rgba(90, 60, 50, 0.32), transparent 65%),
+  radial-gradient(60rem 32rem at 15% 10%, rgba(43, 36, 80, 0.4), transparent 60%),
+  radial-gradient(80rem 44rem at 50% 115%, rgba(29, 23, 40, 0.65), transparent 70%),
+  var(--cj-ground);
+}
+
+/* frosted purple pills for the nav and chips */
+.tabs { background: var(--cj-pill); box-shadow: inset 0 0 0 0.0625rem rgba(122, 107, 174, 0.25); }
+.tab { color: var(--cj-text); }
+.hero-title, .sp-title, .row-title, .eps-title { font-family: var(--cj-display); letter-spacing: -0.015em; }
+.card, .hub-game, .b-game, .tv-row, .sg { background: rgba(29, 23, 40, 0.55); }
+.schip { background: var(--cj-pill); }
+.card .bar i { background: var(--cj-accent); }
+.hub-game.live .b-detail, .hub-game.in .hub-detail, .schip.in i { color: var(--cj-accent); }
+
+/* ---------------- the Live tab ---------------- */
+.tv-modes { display: flex; gap: 0.5rem; margin: 0 0 1.25rem; }
+.tvm {
+  padding: 0.5rem 1.5rem; border-radius: 1.75rem; font-size: 1.3125rem; line-height: 1.75rem; font-weight: 600;
+  color: var(--cj-text); background: var(--cj-pill);
+  -webkit-backdrop-filter: blur(1rem); backdrop-filter: blur(1rem);
+}
+.tvm.on { color: #10131c; background: var(--cj-accent); }
+.tvm.focus { box-shadow: 0 0 0 0.1875rem #fff; transform: scale(1.04); }
+
+.tv-list.wall {
+  display: grid; grid-template-columns: repeat(7, 1fr); gap: 1.125rem;
+  align-content: start; overflow: hidden; padding: 0.375rem;
+}
+.tvp { border-radius: 0.875rem; min-width: 0; }   /* the nowrap titles must never widen the tracks */
+.tvp-art {
+  aspect-ratio: 2 / 3; border-radius: 0.875rem; background-size: cover; background-position: center;
+  background-color: var(--cj-surface); box-shadow: 0 0.625rem 1.5rem rgba(13, 10, 18, 0.6);
+  transition: transform 160ms ease, box-shadow 160ms ease;
+}
+.tvp.focus .tvp-art { transform: scale(1.07); box-shadow: 0 0 0 0.1875rem #fff, 0 1rem 2rem rgba(0, 0, 0, 0.6); }
+.tvp-meta { display: flex; flex-direction: column; gap: 0.125rem; padding: 0.5rem 0.25rem 0; }
+.tvp-name {
+  font-size: 1.0625rem; line-height: 1.4375rem; font-weight: 600; color: var(--cj-text);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.tvp.focus .tvp-name { color: #fff; }
+.tvp-stars { display: flex; gap: 0.125rem; }
+.tvp-stars svg { width: 0.9375rem; height: 0.9375rem; fill: none; stroke: var(--cj-dim); stroke-width: 1.6; }
+.tvp-stars svg.fill { fill: var(--cj-accent); stroke: var(--cj-accent); }
+
+/* the series overlay: seasons across the top, episodes below */
+.tv-eps { display: none; position: fixed; inset: 0; z-index: 40; background: rgba(5, 5, 5, 0.82);
+  -webkit-backdrop-filter: blur(2rem); backdrop-filter: blur(2rem); }
+.tv-eps.on { display: flex; align-items: center; justify-content: center; }
+.eps-box { width: 52rem; max-height: 46rem; padding: 2rem 2.25rem; border-radius: 1.5rem;
+  background: rgba(29, 23, 40, 0.92); box-shadow: 0 2rem 5rem rgba(0, 0, 0, 0.6), inset 0 0 0 0.0625rem rgba(122, 107, 174, 0.3);
+  display: flex; flex-direction: column; }
+.eps-title { margin: 0 0 1rem; font-size: 2rem; line-height: 2.5rem; font-weight: 700; color: #fff; }
+.eps-seasons { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1rem; }
+.eps-list { overflow: hidden; }
+.eps-row {
+  display: flex; align-items: center; gap: 1rem; padding: 0.5rem 1rem; border-radius: 0.875rem; margin-bottom: 0.25rem;
+  font-size: 1.375rem; line-height: 1.875rem; color: var(--cj-text);
+}
+.eps-row.focus { background: #fff; color: #10131c; }
+.eps-num { flex: none; width: 3.5rem; font-weight: 700; color: var(--cj-dim); }
+.eps-row.focus .eps-num { color: #10131c; }

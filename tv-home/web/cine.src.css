@@ -1,0 +1,27 @@
+/* Tailwind source for the Cinejoy-style skin. Compiled to cine.css by scripts/build-tw.sh —
+   utilities only (no preflight, so the existing orbit styles stay untouched), with the palette
+   lifted from the reference design's token set. */
+@layer theme, utilities;
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities);
+
+@source "./orbit.html";
+@source "./orbit.js";
+@source "./orbit-apps.js";
+@source "./orbit-tv.js";
+
+@theme {
+  --color-cj-ground: #050505;
+  --color-cj-surface: #1d1728;
+  --color-cj-surface2: #251e32;
+  --color-cj-hover: #302741;
+  --color-cj-pill: #3c324f;
+  --color-cj-pillhover: #4a3f60;
+  --color-cj-hi: #7a6bae;
+  --color-cj-accent: #95ff50;
+  --color-cj-accent2: #43861e;
+  --color-cj-text: #756790;
+  --color-cj-dim: #5b627b;
+  --color-cj-badge: #181322;
+  --font-display: "Montserrat", "Inter", system-ui, sans-serif;
+}

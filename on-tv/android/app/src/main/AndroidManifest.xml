@@ -72,6 +72,14 @@
             </intent-filter>
         </activity-alias>
 
+        <!-- The Live tab's stream player. Started from the server when a channel or film is picked. -->
+        <activity
+            android:name=".PlayerActivity"
+            android:exported="false"
+            android:launchMode="singleTask"
+            android:screenOrientation="landscape"
+            android:configChanges="keyboard|keyboardHidden|navigation|orientation|screenSize|screenLayout|smallestScreenSize|uiMode|density" />
+
         <service
             android:name=".BridgeService"
             android:exported="false"

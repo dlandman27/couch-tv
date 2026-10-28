@@ -176,6 +176,21 @@ class Server(private val ctx: Context, port: Int) : NanoWSD(port) {
                 if (lgs.isEmpty()) throw ApiError(400, "leagues is required (comma-separated league ids)")
                 json(200, Scores.get(lgs.take(8)))
             }
+            // ---- the Live tab: the household's own playlist line ----
+            "GET /api/tv/categories" -> json(200, ok().put("configured", Live.configured)
+                .put("categories", if (Live.configured) Live.categories(q("kind") ?: "live") else JSONArray()))
+            "GET /api/tv/channels" -> {
+                val kind = q("kind") ?: "live"
+                val cat = q("cat") ?: throw ApiError(400, "cat is required")
+                json(200, ok().put("items", if (kind == "series") Live.seriesList(cat) else Live.channels(kind, cat)))
+            }
+            "GET /api/tv/episodes" -> json(200, ok(Live.episodes(q("id") ?: throw ApiError(400, "id is required"))))
+            "POST /api/tv/play" -> {
+                val url = body(s).optString("url").ifEmpty { throw ApiError(400, "url is required") }
+                ctx.startActivity(android.content.Intent(ctx, PlayerActivity::class.java)
+                    .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK).putExtra("url", url))
+                json(200, ok())
+            }
             "POST /api/home-apps" -> {
                 val b = body(s)
                 Store.writeJson("home-apps.json", JSONObject().put("apps", b.optJSONArray("apps") ?: JSONArray()).put("line", b.optInt("line", 10)))
@@ -284,6 +299,7 @@ class Server(private val ctx: Context, port: Int) : NanoWSD(port) {
         .put("people", Store.people()).put("weather", Store.weather()).put("country", Store.country()).put("tv_name", Store.tvName())
         .put("ask", JSONObject().put("enabled", Store.bool("ask_enabled")).put("has_key", !Store.str("ask_key").isNullOrEmpty()).put("model", Ask.MODEL))
         .put("phones", Auth.phoneCount()).put("port", Store.port).put("adb", JSONObject(Adb.status()))
+        .put("live", JSONObject().put("configured", Live.configured))   // never the credentials themselves
 
     /** {"people": [...]} replaces the list; {"order": [ids]} only reorders it. */
     private fun savePeople(b: JSONObject) {
@@ -330,6 +346,7 @@ class Server(private val ctx: Context, port: Int) : NanoWSD(port) {
         b.optString("tv_name").trim().takeIf { it.isNotEmpty() }?.let { Store.putStr("tv_name", it.take(30)) }
         if (b.has("ask_key")) Store.putStr("ask_key", b.optString("ask_key").trim().ifEmpty { null })
         if (b.has("ask_enabled")) Store.putBool("ask_enabled", b.optBoolean("ask_enabled"))
+        if (b.has("live")) Live.save(b.optJSONObject("live"))   // {server, username, password}, or null to clear
     }
 
     // ---------------------------------------------------------------- server-sent events

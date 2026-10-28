@@ -1,0 +1,12 @@
+{
+  "name": "tv-home-web",
+  "private": true,
+  "description": "Tailwind build for the cine skin: npm run tw",
+  "scripts": {
+    "tw": "tailwindcss -i cine.src.css -o cine.css --minify"
+  },
+  "devDependencies": {
+    "@tailwindcss/cli": "^4.3.3",
+    "tailwindcss": "^4.3.3"
+  }
+}
