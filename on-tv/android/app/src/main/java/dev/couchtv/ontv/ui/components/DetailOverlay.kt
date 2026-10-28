@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyRow
@@ -75,41 +76,45 @@ fun DetailOverlay(
         Box(Modifier.fillMaxSize().background(Brush.verticalGradient(
             0.55f to Color.Transparent, 1f to Color(0xCC050505))))
 
-        Column(Modifier.align(Alignment.CenterStart).padding(start = 56.dp, end = 40.dp, top = 60.dp).widthIn(max = 760.dp)) {
-            Text(det?.name ?: fallbackName, style = Cj.HeroTitle, maxLines = 2, overflow = TextOverflow.Ellipsis)
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp),
-                modifier = Modifier.padding(top = 8.dp, bottom = 6.dp)) {
-                Stars(det?.rating ?: 0.0)
-                if (!det?.year.isNullOrEmpty()) Text(det!!.year, style = Cj.Label.copy(color = Color.White))
-                if (!det?.duration.isNullOrEmpty()) Text(det!!.duration, style = Cj.Label.copy(color = Color.White))
-                if (!det?.genre.isNullOrEmpty()) Text(det!!.genre, style = Cj.Label.copy(color = Cj.Hi), maxLines = 1, overflow = TextOverflow.Ellipsis)
-            }
-            if (!det?.plot.isNullOrEmpty())
-                Text(det!!.plot, style = Cj.Body, maxLines = 4, overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.padding(top = 4.dp))
-            if (!det?.cast.isNullOrEmpty())
-                Text("Starring  " + det!!.cast, style = Cj.Small.copy(color = Cj.Dim), maxLines = 1,
-                    overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 10.dp))
-            if (note.isNotEmpty()) Text(note, style = Cj.Body.copy(color = Cj.Dim), modifier = Modifier.padding(top = 8.dp))
+        // One top-to-bottom column: the info block up top under the nav, a flexible gap, then the
+        // "More like this" rail pinned to the bottom. No overlap at any screen height.
+        Column(Modifier.fillMaxSize().padding(top = 96.dp, bottom = 24.dp)) {
+            Column(Modifier.padding(start = 56.dp, end = 40.dp).widthIn(max = 760.dp)) {
+                Text(det?.name ?: fallbackName, style = Cj.HeroTitle, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp),
+                    modifier = Modifier.padding(top = 8.dp, bottom = 6.dp)) {
+                    Stars(det?.rating ?: 0.0)
+                    if (!det?.year.isNullOrEmpty()) Text(det!!.year, style = Cj.Label.copy(color = Color.White))
+                    if (!det?.duration.isNullOrEmpty()) Text(det!!.duration, style = Cj.Label.copy(color = Color.White))
+                    if (!det?.genre.isNullOrEmpty()) Text(det!!.genre, style = Cj.Label.copy(color = Cj.Hi), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                }
+                if (!det?.plot.isNullOrEmpty())
+                    Text(det!!.plot, style = Cj.Body, maxLines = 3, overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.padding(top = 4.dp))
+                if (!det?.cast.isNullOrEmpty())
+                    Text("Starring  " + det!!.cast, style = Cj.Small.copy(color = Cj.Dim), maxLines = 1,
+                        overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 10.dp))
+                if (note.isNotEmpty()) Text(note, style = Cj.Body.copy(color = Cj.Dim), modifier = Modifier.padding(top = 8.dp))
 
-            Surface(
-                onClick = { if (kind == "series") onEpisodes() else det?.url?.takeIf { it.isNotEmpty() }?.let { onPlay(it) } },
-                shape = ClickableSurfaceDefaults.shape(CircleShape),
-                scale = ClickableSurfaceDefaults.scale(focusedScale = 1.06f),
-                colors = ClickableSurfaceDefaults.colors(
-                    containerColor = Color.White.copy(alpha = 0.92f), contentColor = Cj.Ink,
-                    focusedContainerColor = Color.White, focusedContentColor = Cj.Ink),
-                border = ClickableSurfaceDefaults.border(focusedBorder = Border(BorderStroke(3.dp, Cj.Accent), shape = CircleShape)),
-                modifier = Modifier.padding(top = 18.dp).focusRequester(playFocus)
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 30.dp, vertical = 12.dp)) {
-                    Text(if (kind == "series") "▶  Episodes" else "▶  Play", style = Cj.Label.copy(color = Cj.Ink))
+                Surface(
+                    onClick = { if (kind == "series") onEpisodes() else det?.url?.takeIf { it.isNotEmpty() }?.let { onPlay(it) } },
+                    shape = ClickableSurfaceDefaults.shape(CircleShape),
+                    scale = ClickableSurfaceDefaults.scale(focusedScale = 1.06f),
+                    colors = ClickableSurfaceDefaults.colors(
+                        containerColor = Color.White.copy(alpha = 0.92f), contentColor = Cj.Ink,
+                        focusedContainerColor = Color.White, focusedContentColor = Cj.Ink),
+                    border = ClickableSurfaceDefaults.border(focusedBorder = Border(BorderStroke(3.dp, Cj.Accent), shape = CircleShape)),
+                    modifier = Modifier.padding(top = 18.dp).focusRequester(playFocus)
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 30.dp, vertical = 12.dp)) {
+                        Text(if (kind == "series") "▶  Episodes" else "▶  Play", style = Cj.Label.copy(color = Cj.Ink))
+                    }
                 }
             }
-        }
 
-        if (related.isNotEmpty()) {
-            Column(Modifier.align(Alignment.BottomStart).fillMaxWidth().padding(bottom = 24.dp)) {
+            Spacer(Modifier.weight(1f))
+
+            if (related.isNotEmpty()) {
                 Text("More like this", style = Cj.RowTitle.copy(fontSize = 21.sp),
                     modifier = Modifier.padding(start = 56.dp, bottom = 10.dp))
                 LazyRow(
@@ -117,7 +122,7 @@ fun DetailOverlay(
                     contentPadding = PaddingValues(horizontal = 56.dp)
                 ) {
                     items(related, key = { it.kind + it.id }) { r ->
-                        PosterCard(r.name, r.logo, r.rating, width = 120.dp, onOk = { onOpen(r) })
+                        PosterCard(r.name, r.logo, r.rating, width = 118.dp, onOk = { onOpen(r) })
                     }
                 }
             }
