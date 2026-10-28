@@ -30,7 +30,8 @@ fun HomeScreen(
     onPlay: (String) -> Unit,
     onSeries: (UiRepo.RailItem) -> Unit,
     onProvider: (UiRepo.Provider) -> Unit,
-    onSports: () -> Unit
+    onSports: () -> Unit,
+    onUp: (() -> Unit)? = null
 ) {
     var home by remember { mutableStateOf<UiRepo.HomeData?>(null) }
     var note by remember { mutableStateOf("Loading your line…") }
@@ -45,7 +46,7 @@ fun HomeScreen(
         } else {
             LazyColumn(Modifier.fillMaxSize()) {
                 item(key = "hero") {
-                    HeroCarousel(h.featured, onPlay = { onPlay(it.url) },
+                    HeroCarousel(h.featured, onPlay = { onPlay(it.url) }, onUp = onUp,
                         modifier = Modifier.padding(horizontal = 0.dp))
                 }
                 item(key = "providers") {

@@ -21,6 +21,7 @@ import androidx.tv.material3.TabRow
 import androidx.tv.material3.TabRowDefaults
 import androidx.tv.material3.Text
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.ui.focus.focusRequester
 import dev.couchtv.ontv.ui.Cj
 
 /**
@@ -34,7 +35,8 @@ fun NavBar(
     who: String,
     onPick: (Int) -> Unit,
     onWho: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    tabFocus: androidx.compose.ui.focus.FocusRequester? = null
 ) {
     Row(modifier = modifier, verticalAlignment = Alignment.CenterVertically) {
         Surface(
@@ -52,7 +54,7 @@ fun NavBar(
                             currentTabPosition = it,
                             doesTabRowHaveFocus = doesTabRowHaveFocus,
                             activeColor = Color.White,
-                            inactiveColor = Color.White.copy(alpha = 0.9f))
+                            inactiveColor = Color.White)   // the pill stays white even when focus is elsewhere
                     }
                 }
             ) {
@@ -60,6 +62,8 @@ fun NavBar(
                     Tab(
                         selected = selected == i,
                         onFocus = { onPick(i) },
+                        modifier = if (i == selected && tabFocus != null)
+                            Modifier.focusRequester(tabFocus) else Modifier,
                         colors = TabDefaults.pillIndicatorTabColors(
                             contentColor = Color.White.copy(alpha = 0.6f),
                             focusedContentColor = Cj.Ink,

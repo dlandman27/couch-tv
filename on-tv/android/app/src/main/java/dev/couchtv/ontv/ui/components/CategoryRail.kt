@@ -31,12 +31,13 @@ fun CategoryRail(
                 onClick = { onPick(c) },
                 shape = ClickableSurfaceDefaults.shape(RoundedCornerShape(10.dp)),
                 colors = ClickableSurfaceDefaults.colors(
-                    containerColor = if (on) Color.White.copy(alpha = 0.08f) else Color.Transparent,
+                    containerColor = if (on) Color.White.copy(alpha = 0.07f) else Color.Transparent,
+                    contentColor = if (on) Color.White else Cj.Dim,
                     focusedContainerColor = Color.White,
                     focusedContentColor = Cj.Ink),
                 modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp)
             ) {
-                Text(c.name, style = Cj.Label.copy(color = if (on) Color.White else Color.Unspecified),
+                Text(c.name, style = Cj.Label.copy(color = Color.Unspecified),
                     maxLines = 1, overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.padding(horizontal = 14.dp, vertical = 9.dp))
             }

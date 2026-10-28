@@ -74,7 +74,7 @@ object Live {
             val url = if (kind == "live") "$base/live/$u/$p/$id.m3u8"
             else "$base/movie/$u/$p/$id.${s.optString("container_extension").ifEmpty { "mp4" }}"
             out.put(JSONObject().put("id", id).put("name", s.optString("name"))
-                .put("logo", s.optString("stream_icon")).put("url", url)
+                .put("logo", thumb(s.optString("stream_icon"))).put("url", url)
                 .put("rating", s.optDouble("rating_5based", 0.0).takeIf { it > 0 } ?: JSONObject.NULL))
         }
         return out
@@ -87,7 +87,7 @@ object Live {
         for (i in 0 until minOf(arr.length(), 500)) {
             val s = arr.getJSONObject(i)
             out.put(JSONObject().put("id", s.optString("series_id")).put("name", s.optString("name"))
-                .put("logo", s.optString("cover"))
+                .put("logo", thumb(s.optString("cover")))
                 .put("rating", s.optDouble("rating_5based", 0.0).takeIf { it > 0 } ?: JSONObject.NULL))
         }
         return out
@@ -106,6 +106,9 @@ object Live {
         return t.trim() to year
     }
 
+    /** TMDB posters come w600x900; a 10-foot grid cell needs a third of that. */
+    fun thumb(url: String): String = url.replace("/w600_and_h900_bestv2/", "/w342/")
+
     private fun firstCat(kind: String, vararg wanted: String): JSONObject? {
         val cats = categories(kind)
         for (w in wanted) for (i in 0 until cats.length()) {
@@ -123,7 +126,7 @@ object Live {
         val (title, year) = cleanTitle(s.optString("name"))
         return JSONObject().put("id", s.optString(if (kind == "series") "series_id" else "stream_id"))
             .put("kind", kind).put("name", title).put("year", year)
-            .put("logo", s.optString(if (kind == "series") "cover" else "stream_icon"))
+            .put("logo", thumb(s.optString(if (kind == "series") "cover" else "stream_icon")))
             .put("rating", s.optDouble("rating_5based", 0.0).takeIf { it > 0 } ?: JSONObject.NULL)
     }
 

@@ -28,6 +28,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.Key
@@ -53,10 +54,18 @@ import kotlinx.coroutines.delay
  * Crossfades every eight seconds; left and right turn it by hand while Play holds focus.
  */
 @Composable
-fun HeroCarousel(films: List<UiRepo.Featured>, onPlay: (UiRepo.Featured) -> Unit, modifier: Modifier = Modifier) {
+fun HeroCarousel(films: List<UiRepo.Featured>, onPlay: (UiRepo.Featured) -> Unit,
+                 onUp: (() -> Unit)? = null, modifier: Modifier = Modifier) {
     if (films.isEmpty()) return
     var at by remember { mutableIntStateOf(0) }
     var heldAt by remember { androidx.compose.runtime.mutableLongStateOf(0L) }   // a key press holds the slide a while
+    val playFocus = remember { androidx.compose.ui.focus.FocusRequester() }
+
+    // the remote has to land somewhere when the app opens: on Play
+    LaunchedEffect(films.isNotEmpty()) {
+        if (films.isNotEmpty()) runCatching { playFocus.requestFocus() }
+            .onFailure { android.util.Log.w("couchtv.ui", "initial focus: ${it.message}") }
+    }
 
     LaunchedEffect(films) {
         while (true) {
@@ -66,7 +75,7 @@ fun HeroCarousel(films: List<UiRepo.Featured>, onPlay: (UiRepo.Featured) -> Unit
     }
 
     val film = films[at % films.size]
-    Box(modifier = modifier.fillMaxWidth().height(380.dp)) {
+    Box(modifier = modifier.fillMaxWidth().height(470.dp)) {   // runs up under the floating nav
         AnimatedContent(
             targetState = film,
             transitionSpec = { fadeIn(tween(600)) togetherWith fadeOut(tween(600)) },
@@ -100,11 +109,15 @@ fun HeroCarousel(films: List<UiRepo.Featured>, onPlay: (UiRepo.Featured) -> Unit
                     focusedContainerColor = Color.White, focusedContentColor = Cj.Ink),
                 border = ClickableSurfaceDefaults.border(
                     focusedBorder = Border(BorderStroke(3.dp, Cj.Accent), shape = CircleShape)),
-                modifier = Modifier.padding(top = 14.dp).onKeyEvent { e ->
+                modifier = Modifier.padding(top = 14.dp)
+                    .focusRequester(playFocus)
+                    .onKeyEvent { e ->
                     if (e.type != KeyEventType.KeyDown) return@onKeyEvent false
+                    android.util.Log.i("couchtv.ui", "play key ${e.key}")
                     when (e.key) {
                         Key.DirectionLeft -> { at = (at - 1 + films.size) % films.size; heldAt = System.currentTimeMillis(); true }
                         Key.DirectionRight -> { at = (at + 1) % films.size; heldAt = System.currentTimeMillis(); true }
+                        Key.DirectionUp -> { onUp?.invoke(); onUp != null }
                         else -> false
                     }
                 }

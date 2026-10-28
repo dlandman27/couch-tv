@@ -3,10 +3,15 @@ package dev.couchtv.ontv.ui
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.unit.sp
+import dev.couchtv.ontv.R
 
-/** The reference design's palette, the same tokens the web skin uses. */
+/** The reference design's palette and type, the same tokens the web skin uses. */
 object Cj {
     val Ground = Color(0xFF050505)
     val Surface = Color(0xFF1D1728)
@@ -20,15 +25,34 @@ object Cj {
     val White = Color.White
     val Ink = Color(0xFF10131C)
 
-    /** The ambient bleed behind every page: near-black with a faint warm-purple glow. */
-    val GroundBrush = Brush.verticalGradient(
-        0f to Color(0xFF17101E), 0.35f to Color(0xFF0B0812), 1f to Ground)
+    /** Montserrat for display, Inter for everything else - the reference design's pairing. */
+    val Display = FontFamily(
+        Font(R.font.montserrat_var, weight = FontWeight.Medium),
+        Font(R.font.montserrat_var, weight = FontWeight.SemiBold),
+        Font(R.font.montserrat_var, weight = FontWeight.Bold),
+        Font(R.font.montserrat_var, weight = FontWeight.ExtraBold))
+    val Sans = FontFamily(
+        Font(R.font.inter_var, weight = FontWeight.Normal),
+        Font(R.font.inter_var, weight = FontWeight.Medium),
+        Font(R.font.inter_var, weight = FontWeight.SemiBold),
+        Font(R.font.inter_var, weight = FontWeight.Bold))
 
-    val HeroTitle = TextStyle(fontSize = 56.sp, lineHeight = 60.sp, fontWeight = FontWeight.ExtraBold, color = White, letterSpacing = (-1).sp)
-    val RowTitle = TextStyle(fontSize = 26.sp, lineHeight = 32.sp, fontWeight = FontWeight.Bold, color = White)
-    val Body = TextStyle(fontSize = 18.sp, lineHeight = 26.sp, fontWeight = FontWeight.Normal, color = Color(0xE6FFFFFF))
-    val Label = TextStyle(fontSize = 17.sp, lineHeight = 22.sp, fontWeight = FontWeight.SemiBold, color = Text)
-    val Small = TextStyle(fontSize = 14.sp, lineHeight = 18.sp, fontWeight = FontWeight.Medium, color = Dim)
+    /** The ground: the reference design's near-black, with only a breath of warmth at the top. */
+    val GroundBrush = Brush.verticalGradient(
+        0f to Color(0xFF0C0A10), 0.25f to Color(0xFF070608), 1f to Ground)
+
+    private val heroShadow = Shadow(Color(0xB3000000), Offset(0f, 3f), 14f)
+
+    val HeroTitle = TextStyle(fontFamily = Display, fontSize = 54.sp, lineHeight = 58.sp,
+        fontWeight = FontWeight.ExtraBold, color = White, letterSpacing = (-1).sp, shadow = heroShadow)
+    val RowTitle = TextStyle(fontFamily = Display, fontSize = 25.sp, lineHeight = 32.sp,
+        fontWeight = FontWeight.Bold, color = White)
+    val Body = TextStyle(fontFamily = Sans, fontSize = 17.sp, lineHeight = 25.sp,
+        fontWeight = FontWeight.Normal, color = Color(0xE6FFFFFF), shadow = heroShadow)
+    val Label = TextStyle(fontFamily = Sans, fontSize = 16.sp, lineHeight = 21.sp,
+        fontWeight = FontWeight.SemiBold, color = Text)
+    val Small = TextStyle(fontFamily = Sans, fontSize = 13.sp, lineHeight = 17.sp,
+        fontWeight = FontWeight.Medium, color = Dim)
 
     val BrandColors = mapOf(
         "netflix" to Color(0xFFE50914), "osn" to Color(0xFF8B5CF6), "disney" to Color(0xFF0E45A6),

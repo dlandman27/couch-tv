@@ -17,9 +17,10 @@ import androidx.tv.material3.Text
 import dev.couchtv.ontv.ui.Cj
 import dev.couchtv.ontv.ui.UiRepo
 
-/** One episode in the series overlay: its number and title, white when focused. */
+/** One episode in the series overlay: its number and title, white when it holds focus. */
 @Composable
 fun EpisodeRow(e: UiRepo.Episode, onOk: () -> Unit, modifier: Modifier = Modifier) {
+    // modifier may carry the overlay's initial-focus requester
     Surface(
         onClick = onOk,
         shape = ClickableSurfaceDefaults.shape(RoundedCornerShape(10.dp)),

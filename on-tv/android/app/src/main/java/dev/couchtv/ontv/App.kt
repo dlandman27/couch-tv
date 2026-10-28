@@ -30,6 +30,15 @@ class App : Application() {
         runCatching { Security.insertProviderAt(org.conscrypt.Conscrypt.newProvider(), 1) }
         Store.init(this); Adb.init(this); Tv.init(this)
         instance = this
+        // Posters by the hundred on a small GPU: half-depth bitmaps, no fade, a tight memory cap.
+        runCatching {
+            coil.Coil.setImageLoader(
+                coil.ImageLoader.Builder(this)
+                    .allowRgb565(true)
+                    .crossfade(false)
+                    .memoryCache { coil.memory.MemoryCache.Builder(this).maxSizePercent(0.15).build() }
+                    .build())
+        }
         registerActivityLifecycleCallbacks(object : ActivityLifecycleCallbacks {
             override fun onActivityResumed(a: Activity) { resumed++ }
             override fun onActivityPaused(a: Activity) { resumed-- }

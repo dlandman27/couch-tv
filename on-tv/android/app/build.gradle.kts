@@ -17,8 +17,10 @@ android {
     buildFeatures { buildConfig = true; compose = true }
     buildTypes {
         release {
-            // Not minified: libadb, Conscrypt and BouncyCastle use reflection, and the size saving is small.
-            isMinifyEnabled = false
+            // R8 on: unminified Compose is visibly slower on the TV. The reflective libraries
+            // (libadb, Conscrypt, BouncyCastle, NanoHTTPD) keep their shapes in proguard-rules.pro.
+            isMinifyEnabled = true
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
             // Signed with the local debug key so it installs without a keystore. Use your own key to publish.
             signingConfig = signingConfigs.getByName("debug")
         }

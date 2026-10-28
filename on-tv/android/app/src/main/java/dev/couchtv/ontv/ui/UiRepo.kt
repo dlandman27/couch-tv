@@ -79,11 +79,14 @@ object UiRepo {
         Live.search(q).objects().map(::railItem)
     }
 
+    private val EP_PREFIX = Regex("^.*?S\\d+\\s?E\\d+\\s*-\\s*")   // "… - S01E03 - " falls away
+
     suspend fun seasons(seriesId: String): Pair<String, List<Season>> = withContext(Dispatchers.IO) {
         val j = Live.episodes(seriesId)
-        j.optString("name") to (j.optJSONArray("seasons") ?: JSONArray()).objects().map { se ->
+        Live.cleanTitle(j.optString("name")).first to (j.optJSONArray("seasons") ?: JSONArray()).objects().map { se ->
             Season(se.optInt("season"), (se.optJSONArray("episodes") ?: JSONArray()).objects().map { e ->
-                Episode(e.optString("id"), e.optInt("num"), e.optString("title"), e.optString("url"))
+                Episode(e.optString("id"), e.optInt("num"),
+                    e.optString("title").replace(EP_PREFIX, ""), e.optString("url"))
             })
         }
     }
