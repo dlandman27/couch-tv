@@ -24,6 +24,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusProperties
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -50,7 +51,9 @@ import org.json.JSONArray
 @Composable
 fun CouchApp() {
     val ctx = LocalContext.current
-    val tabs = listOf("Home", "Movies", "Shows", "Live TV", "Sports", "Search", "Apps")
+    // Icon-only tabs in the pill; Search (index 6) lives on the right with the avatar.
+    val tabIcons = NavIcons.tabs
+    val tabNames = listOf("Home", "Movies", "Shows", "Live TV", "Sports", "Apps")
     val tabFocus = remember { FocusRequester() }
     var tab by remember { mutableIntStateOf(0) }
     var provCat by remember { mutableStateOf<String?>(null) }   // a provider tile's category handoff
@@ -133,21 +136,29 @@ fun CouchApp() {
                     2 -> BrowseScreen("series", provCat, onPlay = ::play, onOpen = ::openDetail)
                     3 -> BrowseScreen("live", null, onPlay = ::play, onOpen = {})
                     4 -> SportsScreen(cfg, games)
-                    5 -> SearchScreen(onPlay = ::play, onOpen = ::openDetail)
-                    6 -> AppsScreen()
+                    5 -> AppsScreen()
+                    6 -> SearchScreen(onPlay = ::play, onOpen = ::openDetail)
                 }
         }
+        // a soft top scrim so the floating logo and avatar stay legible over bright hero art
+        Box(Modifier.align(Alignment.TopCenter).fillMaxWidth().height(96.dp).background(
+            androidx.compose.ui.graphics.Brush.verticalGradient(
+                0f to Color(0xB3050505), 1f to Color.Transparent)))
         Row(verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.align(Alignment.TopCenter).fillMaxWidth().padding(horizontal = 40.dp, vertical = 10.dp)) {
             AsyncImage(model = "file:///android_asset/www/tv/orbit-logo.png", contentDescription = "orbit",
                 contentScale = ContentScale.Fit, modifier = Modifier.height(24.dp))
             Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
-                NavBar(tabs, tab, who = people.getOrElse(whoAt) { "·" },
+                NavBar(
+                    icons = tabIcons, names = tabNames, selected = tab.coerceAtMost(5),
+                    searchIcon = NavIcons.Search,
+                    searchSelected = tab == 6,
+                    who = people.getOrElse(whoAt) { "·" },
                     onPick = { tab = it; if (it != 1 && it != 2) provCat = null },
+                    onSearch = { tab = 6; provCat = null },
                     onWho = { whoAt = (whoAt + 1) % people.size },
                     tabFocus = tabFocus)
             }
-            Box(Modifier.size(30.dp))
         }
         detail?.let { (k, id, name) ->
             DetailOverlay(kind = k, id = id, fallbackName = name,

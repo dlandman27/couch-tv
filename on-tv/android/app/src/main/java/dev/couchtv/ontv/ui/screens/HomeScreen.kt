@@ -20,9 +20,8 @@ import dev.couchtv.ontv.ui.components.HeroCarousel
 import dev.couchtv.ontv.ui.components.PosterCard
 import dev.couchtv.ontv.ui.components.ProviderTile
 import dev.couchtv.ontv.ui.components.RailRow
-import dev.couchtv.ontv.ui.components.ScorePill
 
-/** Home: the hero carousel, Browse by Provider, and the trending rails, with the score pill afloat. */
+/** Home: the hero carousel, Browse by Provider, and the trending rails. */
 @Composable
 fun HomeScreen(
     games: List<UiRepo.Game>,
@@ -47,7 +46,7 @@ fun HomeScreen(
             LazyColumn(Modifier.fillMaxSize()) {
                 item(key = "hero") {
                     HeroCarousel(h.featured, onPlay = { onPlay(it.url) }, onUp = onUp,
-                        modifier = Modifier.padding(horizontal = 0.dp))
+                        modifier = Modifier.fillParentMaxHeight(0.74f))
                 }
                 item(key = "providers") {
                     RailRow("Browse by Provider", h.providers.size) { i ->
@@ -70,9 +69,5 @@ fun HomeScreen(
                 item { Box(Modifier.padding(bottom = 40.dp)) }
             }
         }
-        ScorePill(
-            games = games.filter { g -> g.state == "in" || g.home.abbr in follow || g.away.abbr in follow },
-            follow = follow, onOk = onSports,
-            modifier = Modifier.align(Alignment.BottomEnd).padding(end = 36.dp, bottom = 26.dp))
     }
 }
