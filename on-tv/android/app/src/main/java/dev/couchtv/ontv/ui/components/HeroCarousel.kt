@@ -64,7 +64,6 @@ fun HeroCarousel(films: List<UiRepo.Featured>, onPlay: (UiRepo.Featured) -> Unit
     // the remote has to land somewhere when the app opens: on Play
     LaunchedEffect(films.isNotEmpty()) {
         if (films.isNotEmpty()) runCatching { playFocus.requestFocus() }
-            .onFailure { android.util.Log.w("couchtv.ui", "initial focus: ${it.message}") }
     }
 
     LaunchedEffect(films) {
@@ -113,7 +112,6 @@ fun HeroCarousel(films: List<UiRepo.Featured>, onPlay: (UiRepo.Featured) -> Unit
                     .focusRequester(playFocus)
                     .onKeyEvent { e ->
                     if (e.type != KeyEventType.KeyDown) return@onKeyEvent false
-                    android.util.Log.i("couchtv.ui", "play key ${e.key}")
                     when (e.key) {
                         Key.DirectionLeft -> { at = (at - 1 + films.size) % films.size; heldAt = System.currentTimeMillis(); true }
                         Key.DirectionRight -> { at = (at + 1) % films.size; heldAt = System.currentTimeMillis(); true }
