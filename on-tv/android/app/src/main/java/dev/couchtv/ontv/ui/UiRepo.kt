@@ -64,6 +64,14 @@ object UiRepo {
             })
     }
 
+    /** "More like this": same-kind picks from the home rails, the one on screen left out. */
+    suspend fun related(kind: String, id: String): List<RailItem> = withContext(Dispatchers.IO) {
+        val h = runCatching { Live.home() }.getOrNull() ?: return@withContext emptyList()
+        val arr = if (kind == "series") h.optJSONArray("series") else h.optJSONArray("movies")
+        (arr ?: JSONArray()).objects().map { railItem(it).copy(kind = if (kind == "series") "series" else "vod") }
+            .filter { it.id != id }
+    }
+
     suspend fun detail(kind: String, id: String): Detail = withContext(Dispatchers.IO) {
         val o = Live.detail(kind, id)
         Detail(o.optString("kind"), o.optString("id"), o.optString("name"), o.optString("year"),

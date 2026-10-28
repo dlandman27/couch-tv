@@ -59,22 +59,23 @@ fun ProviderTile(id: String, name: String, onOk: () -> Unit, modifier: Modifier 
     }
 }
 
-/** The first installed app that carries this brand. */
+// The installed app that carries each brand (package names verified on the device). A brand with
+// no app on this TV (OSN, Prime, Crunchyroll...) shows its colour and name alone.
+private val PROVIDER_PACKAGES = mapOf(
+    "netflix" to listOf("com.netflix.ninja"),
+    "disney" to listOf("com.disney.disneyplus"),
+    "hulu" to listOf("com.hulu.plus"),
+    "apple" to listOf("com.apple.atve.amazon.appletv"),
+    "hbo" to listOf("com.hbo.hbonow", "com.wbd.stream"),
+    "paramount" to listOf("com.cbs.ott"),
+    "peacock" to listOf("com.peacock.peacockfiretv"),
+    "prime" to listOf("com.amazon.avod", "com.amazon.firebat"),
+    "crunchyroll" to listOf("com.crunchyroll.crunchyroid"),
+    "discovery" to listOf("com.discovery.discoveryplus.firetv"),
+    "starz" to listOf("com.bydeluxe.d3.android.program.starz"))
+
 private fun providerIcon(pm: PackageManager, id: String): Drawable? {
-    val candidates = mapOf(
-        "netflix" to listOf("com.netflix.ninja"),
-        "disney" to listOf("com.disney.disneyplus"),
-        "hulu" to listOf("com.hulu.plus"),
-        "apple" to listOf("com.apple.atve.amazon.appletv"),
-        "prime" to listOf("com.amazon.avod", "com.amazon.firebat"),
-        "hbo" to listOf("com.hbo.hbonow", "com.wbd.stream"),
-        "paramount" to listOf("com.cbs.ott"),
-        "peacock" to listOf("com.peacock.peacockfiretv"),
-        "crunchyroll" to listOf("com.crunchyroll.crunchyroid"),
-        "discovery" to listOf("com.discovery.discoveryplus.firetv"),
-        "starz" to listOf("com.bydeluxe.d3.android.program.starz"),
-        "osn" to emptyList())[id] ?: emptyList()
-    for (pkg in candidates) {
+    for (pkg in PROVIDER_PACKAGES[id].orEmpty()) {
         try { return pm.getApplicationIcon(pkg) } catch (e: Exception) {}
     }
     return null

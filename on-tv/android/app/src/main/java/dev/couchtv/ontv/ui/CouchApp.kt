@@ -153,6 +153,7 @@ fun CouchApp() {
             DetailOverlay(kind = k, id = id, fallbackName = name,
                 onPlay = { url -> play(url) },
                 onEpisodes = { pendingSeriesId = id; overlay = name to emptyList(); overlayNote = null },
+                onOpen = ::openDetail,   // a "More like this" poster swaps the detail page
                 onClose = { detail = null })
         }
         overlay?.let { (name, seasons) ->

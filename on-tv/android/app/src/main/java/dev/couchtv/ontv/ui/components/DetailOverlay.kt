@@ -6,9 +6,13 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -25,6 +29,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.tv.material3.Border
 import androidx.tv.material3.ClickableSurfaceDefaults
 import androidx.tv.material3.Surface
@@ -46,14 +51,17 @@ fun DetailOverlay(
     fallbackName: String,
     onPlay: (String) -> Unit,
     onEpisodes: () -> Unit,
+    onOpen: (UiRepo.RailItem) -> Unit,
     onClose: () -> Unit
 ) {
     var d by remember(id) { mutableStateOf<UiRepo.Detail?>(null) }
+    var related by remember(id) { mutableStateOf<List<UiRepo.RailItem>>(emptyList()) }
     var note by remember(id) { mutableStateOf("") }
     val playFocus = remember { FocusRequester() }
     LaunchedEffect(kind, id) {
         runCatching { d = UiRepo.detail(kind, id) }.onFailure { note = it.message ?: "No detail." }
     }
+    LaunchedEffect(kind, id) { runCatching { related = UiRepo.related(kind, id).take(12) } }
     LaunchedEffect(d != null) { if (d != null) runCatching { playFocus.requestFocus() } }
 
     Box(Modifier.fillMaxSize().background(Cj.Ground)) {
@@ -67,7 +75,7 @@ fun DetailOverlay(
         Box(Modifier.fillMaxSize().background(Brush.verticalGradient(
             0.55f to Color.Transparent, 1f to Color(0xCC050505))))
 
-        Column(Modifier.align(Alignment.CenterStart).padding(start = 56.dp, end = 40.dp).widthIn(max = 760.dp)) {
+        Column(Modifier.align(Alignment.CenterStart).padding(start = 56.dp, end = 40.dp, top = 60.dp).widthIn(max = 760.dp)) {
             Text(det?.name ?: fallbackName, style = Cj.HeroTitle, maxLines = 2, overflow = TextOverflow.Ellipsis)
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp),
                 modifier = Modifier.padding(top = 8.dp, bottom = 6.dp)) {
@@ -96,6 +104,21 @@ fun DetailOverlay(
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 30.dp, vertical = 12.dp)) {
                     Text(if (kind == "series") "▶  Episodes" else "▶  Play", style = Cj.Label.copy(color = Cj.Ink))
+                }
+            }
+        }
+
+        if (related.isNotEmpty()) {
+            Column(Modifier.align(Alignment.BottomStart).fillMaxWidth().padding(bottom = 24.dp)) {
+                Text("More like this", style = Cj.RowTitle.copy(fontSize = 21.sp),
+                    modifier = Modifier.padding(start = 56.dp, bottom = 10.dp))
+                LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(14.dp),
+                    contentPadding = PaddingValues(horizontal = 56.dp)
+                ) {
+                    items(related, key = { it.kind + it.id }) { r ->
+                        PosterCard(r.name, r.logo, r.rating, width = 120.dp, onOk = { onOpen(r) })
+                    }
                 }
             }
         }
