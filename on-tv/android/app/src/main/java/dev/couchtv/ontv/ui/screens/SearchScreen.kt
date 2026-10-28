@@ -36,7 +36,7 @@ import kotlinx.coroutines.delay
  * couple of typed letters swap in results from the whole line.
  */
 @Composable
-fun SearchScreen(onPlay: (String) -> Unit, onSeries: (UiRepo.RailItem) -> Unit) {
+fun SearchScreen(onPlay: (String) -> Unit, onOpen: (UiRepo.RailItem) -> Unit) {
     var query by rememberSaveable { mutableStateOf("") }
     var results by remember { mutableStateOf<List<UiRepo.RailItem>>(emptyList()) }
     var trending by remember { mutableStateOf<List<UiRepo.RailItem>>(emptyList()) }
@@ -87,7 +87,7 @@ fun SearchScreen(onPlay: (String) -> Unit, onSeries: (UiRepo.RailItem) -> Unit) 
         ) {
             itemsIndexed(showing, key = { i, c -> c.kind + c.id + i }) { _, c ->
                 PosterCard(c.name, c.logo, c.rating, width = 150.dp,
-                    onOk = { if (c.kind == "series") onSeries(c) else onPlay(c.url) })
+                    onOk = { if (c.kind == "live") onPlay(c.url) else onOpen(c) })
             }
         }
     }

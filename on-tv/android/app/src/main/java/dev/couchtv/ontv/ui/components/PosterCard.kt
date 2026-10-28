@@ -1,5 +1,7 @@
 package dev.couchtv.ontv.ui.components
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -43,10 +45,15 @@ fun PosterCard(
                 focusedBorder = Border(BorderStroke(3.dp, Color.White), shape = RoundedCornerShape(12.dp))),
             modifier = Modifier.fillMaxWidth().aspectRatio(2f / 3f)
         ) {
-            AsyncImage(
-                model = poster.ifEmpty { null }, contentDescription = name,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxWidth().aspectRatio(2f / 3f).clip(RoundedCornerShape(12.dp)))
+            // a dim card shows under the poster while it decodes, so a rail never flashes empty
+            Box(
+                Modifier.fillMaxWidth().aspectRatio(2f / 3f).clip(RoundedCornerShape(12.dp))
+                    .background(Cj.Surface2)) {
+                AsyncImage(
+                    model = poster.ifEmpty { null }, contentDescription = name,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxWidth().aspectRatio(2f / 3f))
+            }
         }
         Text(name, style = Cj.Small.copy(color = Cj.Text), maxLines = 1, overflow = TextOverflow.Ellipsis,
             modifier = Modifier.padding(top = 7.dp, start = 2.dp))

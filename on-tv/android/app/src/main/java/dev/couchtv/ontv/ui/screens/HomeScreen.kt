@@ -28,7 +28,7 @@ fun HomeScreen(
     games: List<UiRepo.Game>,
     follow: List<String>,
     onPlay: (String) -> Unit,
-    onSeries: (UiRepo.RailItem) -> Unit,
+    onOpen: (UiRepo.RailItem) -> Unit,
     onProvider: (UiRepo.Provider) -> Unit,
     onSports: () -> Unit,
     onUp: (() -> Unit)? = null
@@ -58,13 +58,13 @@ fun HomeScreen(
                 item(key = "movies") {
                     RailRow("Trending Movies", h.movies.size) { i ->
                         val m = h.movies[i]
-                        PosterCard(m.name, m.logo, m.rating, onOk = { onPlay(m.url) })
+                        PosterCard(m.name, m.logo, m.rating, onOk = { onOpen(m) })
                     }
                 }
                 item(key = "series") {
                     RailRow("Trending Series", h.series.size) { i ->
                         val s = h.series[i]
-                        PosterCard(s.name, s.logo, s.rating, onOk = { onSeries(s) })
+                        PosterCard(s.name, s.logo, s.rating, onOk = { onOpen(s) })
                     }
                 }
                 item { Box(Modifier.padding(bottom = 40.dp)) }

@@ -122,6 +122,39 @@ object Live {
     private fun vodInfo(id: String): JSONObject =
         JSONObject(fetch(apiUrl("get_vod_info", "&vod_id=$id"), 24 * 3600_000)).optJSONObject("info") ?: JSONObject()
 
+    /**
+     * The detail page's content: plot, genre, cast, a backdrop, and for a film its play link.
+     * kind is "vod" or "series"; the title and year are cleaned, like the rails.
+     */
+    fun detail(kind: String, id: String): JSONObject {
+        val c = cfg() ?: throw ApiError(409, "No playlist on this TV yet.")
+        val base = c.getString("server"); val u = c.getString("username"); val p = c.getString("password")
+        return if (kind == "series") {
+            val j = JSONObject(fetch(apiUrl("get_series_info", "&series_id=$id"), 24 * 3600_000))
+            val info = j.optJSONObject("info") ?: JSONObject()
+            val (title, year) = cleanTitle(info.optString("name"))
+            JSONObject().put("kind", "series").put("id", id).put("name", title).put("year", year)
+                .put("plot", info.optString("plot")).put("genre", info.optString("genre"))
+                .put("cast", info.optString("cast")).put("director", info.optString("director"))
+                .put("poster", thumb(info.optString("cover")))
+                .put("backdrop", info.optJSONArray("backdrop_path")?.optString(0)?.ifEmpty { null } ?: info.optString("cover"))
+                .put("rating", info.optDouble("rating_5based", 0.0).takeIf { it > 0 } ?: JSONObject.NULL)
+        } else {
+            val raw = JSONObject(fetch(apiUrl("get_vod_info", "&vod_id=$id"), 24 * 3600_000))
+            val info = raw.optJSONObject("info") ?: JSONObject()
+            val data = raw.optJSONObject("movie_data") ?: JSONObject()
+            val (title, year) = cleanTitle(data.optString("name").ifEmpty { info.optString("name") })
+            JSONObject().put("kind", "vod").put("id", id).put("name", title).put("year", year)
+                .put("plot", info.optString("plot").ifEmpty { info.optString("description") })
+                .put("genre", info.optString("genre")).put("cast", info.optString("cast"))
+                .put("director", info.optString("director")).put("duration", info.optString("duration"))
+                .put("poster", thumb(info.optString("movie_image")))
+                .put("backdrop", info.optJSONArray("backdrop_path")?.optString(0)?.ifEmpty { null } ?: info.optString("movie_image"))
+                .put("rating", info.optDouble("rating", 0.0).let { if (it > 5) it / 2 else it }.takeIf { it > 0 } ?: JSONObject.NULL)
+                .put("url", "$base/movie/$u/$p/$id.${data.optString("container_extension").ifEmpty { "mp4" }}")
+        }
+    }
+
     private fun railItem(s: JSONObject, kind: String): JSONObject {
         val (title, year) = cleanTitle(s.optString("name"))
         return JSONObject().put("id", s.optString(if (kind == "series") "series_id" else "stream_id"))

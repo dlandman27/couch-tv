@@ -24,6 +24,10 @@ object UiRepo {
     data class HomeData(val featured: List<Featured>, val movies: List<RailItem>,
                         val series: List<RailItem>, val providers: List<Provider>)
 
+    data class Detail(val kind: String, val id: String, val name: String, val year: String,
+                      val plot: String, val genre: String, val cast: String, val director: String,
+                      val duration: String, val poster: String, val backdrop: String, val rating: Double, val url: String)
+
     data class Category(val id: String, val name: String)
     data class Episode(val id: String, val num: Int, val title: String, val url: String)
     data class Season(val season: Int, val episodes: List<Episode>)
@@ -58,6 +62,14 @@ object UiRepo {
                     o.optString("vod").takeIf { it.isNotEmpty() && it != "null" },
                     o.optString("series").takeIf { it.isNotEmpty() && it != "null" })
             })
+    }
+
+    suspend fun detail(kind: String, id: String): Detail = withContext(Dispatchers.IO) {
+        val o = Live.detail(kind, id)
+        Detail(o.optString("kind"), o.optString("id"), o.optString("name"), o.optString("year"),
+            o.optString("plot"), o.optString("genre"), o.optString("cast"), o.optString("director"),
+            o.optString("duration"), o.optString("poster"), o.optString("backdrop"),
+            o.optDouble("rating", 0.0), o.optString("url"))
     }
 
     suspend fun categories(kind: String): List<Category> = withContext(Dispatchers.IO) {

@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import dev.couchtv.ontv.PlayerActivity
 import dev.couchtv.ontv.Store
+import dev.couchtv.ontv.ui.components.DetailOverlay
 import dev.couchtv.ontv.ui.components.EpisodesOverlay
 import dev.couchtv.ontv.ui.components.NavBar
 import dev.couchtv.ontv.ui.screens.AppsScreen
@@ -55,6 +56,7 @@ fun CouchApp() {
     var provCat by remember { mutableStateOf<String?>(null) }   // a provider tile's category handoff
     var overlay by remember { mutableStateOf<Pair<String, List<UiRepo.Season>>?>(null) }
     var overlayNote by remember { mutableStateOf<String?>(null) }
+    var detail by remember { mutableStateOf<Triple<String, String, String>?>(null) }   // kind, id, name
 
     // who is watching, straight from the bridge's people list
     var people by remember { mutableStateOf(listOf("Person 1")) }
@@ -85,6 +87,8 @@ fun CouchApp() {
         overlay = item.name to emptyList()
         overlayNote = null
     }
+    // a poster opens its detail page; the hero's own Play still plays straight away
+    fun openDetail(item: UiRepo.RailItem) { detail = Triple(if (item.kind == "series") "series" else "vod", item.id, item.name) }
     // the overlay's seasons load once it opens
     LaunchedEffect(overlay?.first) {
         val name = overlay?.first ?: return@LaunchedEffect
@@ -96,8 +100,12 @@ fun CouchApp() {
         }.onFailure { overlayNote = it.message }
     }
 
-    BackHandler(enabled = overlay != null || tab != 0) {
-        if (overlay != null) overlay = null else tab = 0
+    BackHandler(enabled = detail != null || overlay != null || tab != 0) {
+        when {
+            overlay != null -> overlay = null
+            detail != null -> detail = null
+            else -> tab = 0
+        }
     }
 
     Box(Modifier.fillMaxSize().background(Cj.GroundBrush)) {
@@ -114,18 +122,18 @@ fun CouchApp() {
                 when (tab) {
                     0 -> HomeScreen(games, cfg.follow,
                         onPlay = ::play,
-                        onSeries = { pendingSeriesId = it.id; openSeries(it) },
+                        onOpen = ::openDetail,
                         onProvider = { p ->
                             provCat = p.vodCat ?: p.seriesCat
                             tab = if (p.vodCat != null) 1 else 2
                         },
                         onSports = { tab = 4 },
-                        onUp = { android.util.Log.i("couchtv.ui", "hero up -> nav"); runCatching { tabFocus.requestFocus() }.onFailure { android.util.Log.w("couchtv.ui", "nav focus: ${it.message}") } })
-                    1 -> BrowseScreen("vod", provCat, onPlay = ::play, onSeries = { pendingSeriesId = it.id; openSeries(it) })
-                    2 -> BrowseScreen("series", provCat, onPlay = ::play, onSeries = { pendingSeriesId = it.id; openSeries(it) })
-                    3 -> BrowseScreen("live", null, onPlay = ::play, onSeries = {})
+                        onUp = { runCatching { tabFocus.requestFocus() } })
+                    1 -> BrowseScreen("vod", provCat, onPlay = ::play, onOpen = ::openDetail)
+                    2 -> BrowseScreen("series", provCat, onPlay = ::play, onOpen = ::openDetail)
+                    3 -> BrowseScreen("live", null, onPlay = ::play, onOpen = {})
                     4 -> SportsScreen(cfg, games)
-                    5 -> SearchScreen(onPlay = ::play, onSeries = { pendingSeriesId = it.id; openSeries(it) })
+                    5 -> SearchScreen(onPlay = ::play, onOpen = ::openDetail)
                     6 -> AppsScreen()
                 }
         }
@@ -140,6 +148,12 @@ fun CouchApp() {
                     tabFocus = tabFocus)
             }
             Box(Modifier.size(30.dp))
+        }
+        detail?.let { (k, id, name) ->
+            DetailOverlay(kind = k, id = id, fallbackName = name,
+                onPlay = { url -> play(url) },
+                onEpisodes = { pendingSeriesId = id; overlay = name to emptyList(); overlayNote = null },
+                onClose = { detail = null })
         }
         overlay?.let { (name, seasons) ->
             EpisodesOverlay(

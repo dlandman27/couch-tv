@@ -38,7 +38,7 @@ fun BrowseScreen(
     kind: String,
     startCat: String?,
     onPlay: (String) -> Unit,
-    onSeries: (UiRepo.RailItem) -> Unit
+    onOpen: (UiRepo.RailItem) -> Unit
 ) {
     var cats by remember(kind) { mutableStateOf<List<UiRepo.Category>>(emptyList()) }
     var catId by rememberSaveable(kind, startCat) { mutableStateOf(startCat) }
@@ -77,8 +77,7 @@ fun BrowseScreen(
                     contentPadding = PaddingValues(bottom = 30.dp, top = 4.dp)
                 ) {
                     itemsIndexed(items, key = { _, c -> c.id }) { _, c ->
-                        PosterCard(c.name, c.logo, c.rating, width = 150.dp,
-                            onOk = { if (kind == "series") onSeries(c) else onPlay(c.url) })
+                        PosterCard(c.name, c.logo, c.rating, width = 150.dp, onOk = { onOpen(c) })
                     }
                 }
             }
