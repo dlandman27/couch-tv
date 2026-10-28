@@ -92,12 +92,9 @@ fun HeroCarousel(films: List<UiRepo.Featured>, onPlay: (UiRepo.Featured) -> Unit
         Box(Modifier.fillMaxSize().background(Brush.verticalGradient(
             0.6f to Color.Transparent, 1f to Color(0x8C050505))))
 
-        // Fill the hero and push the block to the bottom with a weighted spacer, but keep an 84dp
-        // top inset: when the text is tall the spacer collapses and the block stops at 84dp -
-        // always clear of the floating nav, on any screen size.
-        Column(Modifier.fillMaxSize().padding(start = 44.dp, end = 40.dp, top = 84.dp, bottom = 28.dp)) {
-            Spacer(Modifier.weight(1f))
-          Column(Modifier.widthIn(max = 600.dp)) {
+        // The hero Box is a concrete height (the caller passes it); anchoring the block to the
+        // bottom here puts the title low-left, well clear of the floating nav.
+        Column(Modifier.align(Alignment.BottomStart).padding(start = 44.dp, end = 40.dp, bottom = 30.dp).widthIn(max = 600.dp)) {
             Text("Picked for you", style = Cj.Small.copy(color = Color.White.copy(alpha = 0.75f)))
             Text(film.name, style = Cj.HeroTitle.copy(fontSize = 40.sp, lineHeight = 44.sp), maxLines = 1, overflow = TextOverflow.Ellipsis)
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -135,7 +132,6 @@ fun HeroCarousel(films: List<UiRepo.Featured>, onPlay: (UiRepo.Featured) -> Unit
                     Text("  Play", style = Cj.Label.copy(color = Cj.Ink))
                 }
             }
-          }
         }
 
         Row(horizontalArrangement = Arrangement.spacedBy(7.dp),

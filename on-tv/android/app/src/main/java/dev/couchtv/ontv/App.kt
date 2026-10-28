@@ -78,7 +78,8 @@ class App : Application() {
 
         fun openHome() {
             val c = instance
-            main.post { runCatching { c.startActivity(Intent(c, HomeActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) } }
+            // The native Compose home is the home now; the old webview HomeActivity is retired.
+            main.post { runCatching { c.startActivity(Intent(c, dev.couchtv.ontv.ui.NativeHomeActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) } }
         }
 
         fun setSleep(ends: Long?) {

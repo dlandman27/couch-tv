@@ -146,8 +146,6 @@ fun CouchApp() {
                 0f to Color(0xB3050505), 1f to Color.Transparent)))
         Row(verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.align(Alignment.TopCenter).fillMaxWidth().padding(horizontal = 40.dp, vertical = 10.dp)) {
-            AsyncImage(model = "file:///android_asset/www/tv/orbit-logo.png", contentDescription = "orbit",
-                contentScale = ContentScale.Fit, modifier = Modifier.height(24.dp))
             Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
                 NavBar(
                     icons = tabIcons, names = tabNames, selected = tab.coerceAtMost(5),

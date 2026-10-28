@@ -1,7 +1,10 @@
 package dev.couchtv.ontv.ui.screens
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.runtime.Composable
@@ -21,7 +24,11 @@ import dev.couchtv.ontv.ui.components.PosterCard
 import dev.couchtv.ontv.ui.components.ProviderTile
 import dev.couchtv.ontv.ui.components.RailRow
 
-/** Home: the hero carousel, Browse by Provider, and the trending rails. */
+/**
+ * Home: a fixed hero at the top, then the provider and trending rails scrolling beneath it. The
+ * hero is NOT inside the scrolling list, so focusing its Play button can never scroll the hero up
+ * behind the nav - that was the bug where the title hid once Play was selected.
+ */
 @Composable
 fun HomeScreen(
     games: List<UiRepo.Game>,
@@ -38,35 +45,36 @@ fun HomeScreen(
         runCatching { home = UiRepo.home() }.onFailure { note = it.message ?: "The line did not answer." }
     }
 
-    Box(Modifier.fillMaxSize()) {
+    androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxSize()) {
+        val heroHeight = maxHeight * 0.62f   // fixed; the rails take the rest and scroll
         val h = home
         if (h == null) {
             Text(note, style = Cj.Body, modifier = Modifier.align(Alignment.Center))
         } else {
-            LazyColumn(Modifier.fillMaxSize()) {
-                item(key = "hero") {
-                    HeroCarousel(h.featured, onPlay = { onPlay(it.url) }, onUp = onUp,
-                        modifier = Modifier.fillParentMaxHeight(0.74f))
-                }
-                item(key = "providers") {
-                    RailRow("Browse by Provider", h.providers.size) { i ->
-                        val p = h.providers[i]
-                        ProviderTile(p.id, p.name, onOk = { onProvider(p) })
+            Column(Modifier.fillMaxSize()) {
+                HeroCarousel(h.featured, onPlay = { onPlay(it.url) }, onUp = onUp,
+                    modifier = Modifier.fillMaxWidth().height(heroHeight))
+                LazyColumn(Modifier.fillMaxWidth().weight(1f)) {
+                    item(key = "providers") {
+                        RailRow("Browse by Provider", h.providers.size) { i ->
+                            val p = h.providers[i]
+                            ProviderTile(p.id, p.name, onOk = { onProvider(p) })
+                        }
                     }
-                }
-                item(key = "movies") {
-                    RailRow("Trending Movies", h.movies.size) { i ->
-                        val m = h.movies[i]
-                        PosterCard(m.name, m.logo, m.rating, onOk = { onOpen(m) })
+                    item(key = "movies") {
+                        RailRow("Trending Movies", h.movies.size) { i ->
+                            val m = h.movies[i]
+                            PosterCard(m.name, m.logo, m.rating, onOk = { onOpen(m) })
+                        }
                     }
-                }
-                item(key = "series") {
-                    RailRow("Trending Series", h.series.size) { i ->
-                        val s = h.series[i]
-                        PosterCard(s.name, s.logo, s.rating, onOk = { onOpen(s) })
+                    item(key = "series") {
+                        RailRow("Trending Series", h.series.size) { i ->
+                            val s = h.series[i]
+                            PosterCard(s.name, s.logo, s.rating, onOk = { onOpen(s) })
+                        }
                     }
+                    item { Box(Modifier.padding(bottom = 40.dp)) }
                 }
-                item { Box(Modifier.padding(bottom = 40.dp)) }
             }
         }
     }
