@@ -39,6 +39,7 @@ import androidx.compose.ui.input.key.type
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.tv.material3.Border
 import androidx.tv.material3.ClickableSurfaceDefaults
 import androidx.tv.material3.Surface
@@ -76,7 +77,7 @@ fun HeroCarousel(films: List<UiRepo.Featured>, onPlay: (UiRepo.Featured) -> Unit
     // Height from the screen, not a fixed number, so the title always clears the nav on any TV.
     val screenH = androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp
     val film = films[at % films.size]
-    Box(modifier = modifier.fillMaxWidth().height((screenH * 0.72f).dp)) {   // runs up under the floating nav
+    Box(modifier = modifier.fillMaxWidth().height((screenH * 0.66f).dp)) {   // runs up under the floating nav
         AnimatedContent(
             targetState = film,
             transitionSpec = { fadeIn(tween(600)) togetherWith fadeOut(tween(600)) },
@@ -90,17 +91,18 @@ fun HeroCarousel(films: List<UiRepo.Featured>, onPlay: (UiRepo.Featured) -> Unit
         Box(Modifier.fillMaxSize().background(Brush.verticalGradient(
             0.6f to Color.Transparent, 1f to Color(0x8C050505))))
 
-        Column(Modifier.align(Alignment.BottomStart).padding(start = 44.dp, bottom = 30.dp).widthIn(max = 620.dp)) {
+        // Compact block in the lower-left, like the reference - never tall enough to reach the nav.
+        Column(Modifier.align(Alignment.BottomStart).padding(start = 44.dp, bottom = 28.dp).widthIn(max = 600.dp)) {
             Text("Picked for you", style = Cj.Small.copy(color = Color.White.copy(alpha = 0.75f)))
-            Text(film.name, style = Cj.HeroTitle, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(film.name, style = Cj.HeroTitle.copy(fontSize = 40.sp, lineHeight = 44.sp), maxLines = 1, overflow = TextOverflow.Ellipsis)
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp),
-                modifier = Modifier.padding(top = 6.dp, bottom = 4.dp)) {
-                Stars(film.rating)
+                modifier = Modifier.padding(top = 4.dp, bottom = 2.dp)) {
+                Stars(film.rating, size = 13.sp)
                 if (film.year.isNotEmpty()) Text(film.year, style = Cj.Label.copy(color = Color.White))
-                if (film.genre.isNotEmpty()) Text(film.genre, style = Cj.Label.copy(color = Cj.Hi))
+                if (film.genre.isNotEmpty()) Text(film.genre, style = Cj.Label.copy(color = Cj.Hi), maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
             if (film.plot.isNotEmpty())
-                Text(film.plot, style = Cj.Body, maxLines = 3, overflow = TextOverflow.Ellipsis)
+                Text(film.plot, style = Cj.Body.copy(fontSize = 15.sp, lineHeight = 21.sp), maxLines = 2, overflow = TextOverflow.Ellipsis)
             Surface(
                 onClick = { onPlay(films[at % films.size]) },
                 shape = ClickableSurfaceDefaults.shape(CircleShape),
